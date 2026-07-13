@@ -286,3 +286,50 @@ R@5 0.857 → 0.929, with hit@1 unchanged — no category degraded at any k. Rel
 beyond rank 10 is still bounded by expansion depth (relationship R@10 0.750 in both modes).
 Every graph-derived result in `artifacts/retrieval_results.jsonl` lists the entity, relation,
 and document that justify it.
+
+---
+
+## ADR-0012: Dashboard as a layered evidence viewer — no LLM answers, explicit degraded states
+
+**Context:** Milestone 5 replaces the health-check Streamlit app with the investigation
+dashboard over the existing hybrid retriever, graph store, and evaluation artifacts. The
+decisions that needed making: how UI code is layered and tested, where timeline data comes
+from, how two ranking semantics are displayed honestly, and how failures render.
+
+**Decision:** (a) **The dashboard displays retrieved evidence only** — ranked chunks with
+document citations, similarity scores, source badges, and per-chunk `GraphEvidence` trails.
+There is no LLM answer-generation layer; nothing is shown that a stored document does not
+back. (b) **Three-layer UI:** `ui/backend.py` is the UI's only data boundary (builds
+`HybridRetriever.from_settings()`, converts vector-leg failures — `ValueError` /
+`SQLAlchemyError` / `OSError` — into an explicit `InvestigationOutcome` error, fetches
+timeline events, loads artifacts); `ui/presenters.py` and `ui/figures.py` are pure functions
+from result objects to display structures and Plotly figures; `ui/streamlit_app.py` holds only
+Streamlit wiring and caching (`st.cache_resource` for the retriever, `st.cache_data` for
+searches/timeline). Database drivers never appear in UI code. (c) **Timeline events are read
+from Neo4j** through a new `Neo4jGraphStore.timeline_events()` query (`Event` nodes with
+`EVIDENCED_BY` document provenance and `INVOLVES` entities) — the graph is where extracted
+events already live with provenance; a Neo4j outage therefore degrades the timeline with a
+visible notice, matching `architecture.md`. (d) **The entity graph draws only evidence-backed
+edges** — nodes and edges come exclusively from the current result's `GraphEvidence` rows in a
+deterministic bipartite entity↔document layout; similarity (cosine, vector leg only) and
+fused rank score are labeled as different quantities and never blended. (e) **Degraded states
+are first-class renders:** vector failure → error banner and no results (never empty-as-
+success); `graph_available=False` → vector evidence retained plus a visible reason; missing
+artifacts → the exact reproduction command. (f) **Streamlit's module file watcher is disabled**
+(`fileWatcherType = "none"`): with sentence-transformers loaded, the watcher's module
+introspection crashed the local server (observed segfault, exit 139, on macOS during
+verification); the app needs no hot reload against read-only cloud stores.
+
+**Alternatives considered:** LLM-generated answer summaries over the evidence (out of scope by
+product non-goal; unsupported prose); reading timeline events from gold labels
+(`data/labels/events.jsonl` is evaluation ground truth, not runtime data — the UI must show
+extracted facts); a spring-layout network via networkx (extra dependency, non-deterministic
+layout for no evidential gain); testing panels only by import (headless
+`streamlit.testing.v1.AppTest` runs assert the actual degraded renders).
+
+**Consequences:** Presentation logic is unit-tested without cloud services or model downloads
+(fabricated `HybridResult`/`TimelineEvent` inputs); the app imports and renders health/degraded
+states with no credentials configured (AppTest-verified); all four panels verified against live
+Supabase + AuraDB on 2026-07-13. A refusal/no-evidence threshold still does not exist
+(ADR-0010) — negative questions display their retrieved chunks with scores rather than a
+fabricated refusal.

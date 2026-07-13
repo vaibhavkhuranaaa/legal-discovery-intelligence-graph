@@ -70,12 +70,22 @@ Exit criteria met: cloud round-trip verified (186 nodes / 536 relationships in A
 42 — relationship hit@5 0.500 → 0.833, overall hit@5 0.893 → 0.964, R@5 0.857 → 0.929, hit@1
 unchanged, no category degraded at any k (`DATA_AND_EVALUATION.md`). 63 tests passing.
 
-## Milestone 5 — Investigation dashboard ⬜
+## Milestone 5 — Investigation dashboard ✅
 
-Full Streamlit UI: question → cited evidence view, interactive Plotly entity graph, timeline
-view, evaluation metrics page, degraded-mode handling per `architecture.md` failure boundaries.
+Full Streamlit UI (`ui/`): investigation tab (question → ranked, cited evidence with
+vector/graph source badges, cosine scores, and per-chunk graph evidence trails), interactive
+Plotly entity graph built only from evidence-backed relations, extracted-event timeline
+(Plotly + cited table view, events read from Neo4j via `Neo4jGraphStore.timeline_events()`),
+and an evaluation panel rendering `artifacts/*.json` with vector-only vs graph-expanded kept
+separate. Layered as `backend.py` (the UI's only data boundary) → pure `presenters.py` /
+`figures.py` → `streamlit_app.py` (ADR-0012). Degraded modes are explicit per
+`architecture.md`: vector failure → error state, graph failure → vector evidence retained with
+a visible notice, missing artifacts → reproduction-command empty state. No LLM answer
+generation.
 
-Exit criteria: all four panels working locally against cloud backends; demo script drafted.
+Exit criteria met: all four panels verified locally against live Supabase + AuraDB (browser
+session run 2026-07-13); no-credential and degraded states covered by headless `AppTest` tests;
+demo script outline drafted in `DEMO_SCRIPT.md` (finalized at Milestone 6). 88 tests passing.
 
 ## Milestone 6 — Public deployment ⬜
 

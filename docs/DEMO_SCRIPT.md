@@ -1,9 +1,9 @@
 # Demo Script (90 seconds)
 
-> **Status: INCOMPLETE — placeholder.** This script cannot be written truthfully until the
-> application works end-to-end (Milestone 5) and is deployed (Milestone 6). Nothing below the
-> outline is final, and no step may be added here before it has been performed against the
-> running application.
+> **Status: INCOMPLETE — outline only.** The application works end-to-end locally
+> (Milestone 5), but this script is finalized only against the deployed public URL
+> (Milestone 6). Nothing below the outline is final, and no step may be added here before it
+> has been performed against the live deployment.
 
 ## Planned Outline
 

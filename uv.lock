@@ -1140,7 +1140,7 @@ requires-dist = [
     { name = "sentence-transformers", specifier = ">=3.0" },
     { name = "spacy", specifier = ">=3.7" },
     { name = "sqlalchemy", specifier = ">=2.0" },
-    { name = "streamlit", specifier = ">=1.40" },
+    { name = "streamlit", specifier = ">=1.59" },
 ]
 
 [package.metadata.requires-dev]

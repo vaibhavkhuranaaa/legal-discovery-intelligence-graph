@@ -1,7 +1,7 @@
 # Project Context — Read This First In A New Session
 
 Self-contained handoff for the **Legal Discovery Intelligence Graph**. Contains only verified
-current state — no aspirations. Last verified: 2026-07-13 (Milestone 4 completion).
+current state — no aspirations. Last verified: 2026-07-13 (Milestone 5 completion).
 
 ## What This Project Is
 
@@ -15,7 +15,7 @@ on Streamlit Community Cloud at Milestone 6. Full design: `product.md`, `archite
 **Repository:** `github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph` (public).
 CI (GitHub Actions): `uv sync --frozen`, `ruff check`, `pytest` on pushes/PRs to `main`.
 
-## Current Status: Milestones 0–4 complete
+## Current Status: Milestones 0–5 complete
 
 **Milestone 0 — Foundation (done):** uv-managed Python 3.12 project (Hatchling, src layout),
 Ruff/pytest baseline, `config.py` (settings singleton), `models.py` (shared-ID Pydantic
@@ -102,6 +102,42 @@ contracts), docs set + 7 imported standards, minimal Streamlit health-check app,
   Summed RRF was measured and rejected (hit@1 collapsed to 0.143 — ADR-0011). Relationship
   R@10 stays 0.750: multi-hop evidence beyond one hop is a known limitation.
 
+**Milestone 5 — Investigation dashboard (done):**
+
+- `ui/` is now three layers (ADR-0012): `backend.py` — the UI's only data boundary
+  (`HybridRetriever.from_settings()`, vector-leg failures converted to an explicit
+  `InvestigationOutcome` error, timeline via the graph store, artifact loading);
+  `presenters.py` + `figures.py` — pure shaping/Plotly builders (evidence rows, evidence-only
+  graph elements, chronological timeline frame, metric tables); `streamlit_app.py` — Streamlit
+  wiring and caching only (`st.cache_resource` retriever, `st.cache_data` searches/timeline;
+  body under `main()` so plain import is side-effect-free). No drivers in UI code, no LLM
+  anywhere.
+- Four tabs: **Investigate** (question → ranked cited chunks with vector/graph badges, cosine
+  for vector hits only, fused rank score, per-chunk `GraphEvidence` trails), **Entity graph**
+  (bipartite Plotly graph drawn exclusively from the current result's evidence rows),
+  **Timeline** (new `Neo4jGraphStore.timeline_events()` reads `Event` nodes with `EVIDENCED_BY`
+  document provenance + `INVOLVES` entity names; Plotly scatter + cited table), **Evaluation**
+  (renders `artifacts/extraction_metrics.json` / `retrieval_metrics.json`; vector-only vs
+  graph-expanded side by side, never blended).
+- Degraded states are explicit: unconfigured `DATABASE_URL` → search disabled with an error;
+  vector failure → error banner, never empty-as-success; `graph_available=False` → vector
+  evidence retained + visible reason; Neo4j down → timeline notice; missing artifacts → the
+  reproduction command.
+- Streamlit's module file watcher is disabled in `.streamlit/config.toml`
+  (`fileWatcherType = "none"`): with sentence-transformers/torch loaded it segfaulted the
+  local server (exit 139, observed during verification). Streamlit floor raised to 1.59
+  (`width="stretch"` replaces the deprecated `use_container_width`).
+
+**Verification (run 2026-07-13, Milestone 5):** `uv run pytest` — 88 passed (25 new: presenter
+shaping, evidence-only graph elements, figure construction/empty states, timeline record
+conversion incl. neo4j `DateTime`, backend outcome conversion, artifact absent/present, and
+headless `AppTest` renders of the no-credential, degraded-timeline, and missing-artifact
+states); `uv run ruff check .` — clean; `uv run streamlit run …/ui/streamlit_app.py` — served
+locally and inspected in a browser against live Supabase + AuraDB: hybrid search returned 10
+chunks (5 graph-contributed) with evidence trails, entity graph rendered 16 nodes / 44
+evidence-backed edges, timeline showed all 12 events, evaluation tables matched the committed
+artifacts.
+
 **Verification (run 2026-07-13, Milestone 4):** `uv run pytest` — 63 passed; `uv run ruff
 check .` — clean; `uv run python scripts/load_neo4j.py` — 186 nodes / 536 relationships in
 AuraDB (111 documents, 12 events, 349 mention edges, 138 SENT/RECEIVED) and 566
@@ -122,15 +158,15 @@ generated data and artifacts correctly gitignored.
 **What does NOT exist yet (do not assume otherwise):**
 
 - No Community Cloud app, no live URL. Supabase and AuraDB are the only cloud services in use.
-- No LLM answer generation anywhere — hybrid retrieval returns evidence, not prose answers.
-- No refusal threshold in runtime code; negative-query behavior is analysis-only so far.
-- The Streamlit app is still the foundation health check; no product UI (Milestone 5).
+- No LLM answer generation anywhere — the dashboard displays retrieved, cited evidence only.
+- No refusal threshold in runtime code (ADR-0010); negative questions display their retrieved
+  chunks with scores — the UI does not fabricate a refusal.
 
 ## How To Run
 
 ```bash
 uv sync
-uv run pytest                                    # 43 tests
+uv run pytest                                    # 88 tests
 uv run ruff check .
 uv run python scripts/bootstrap_data.py          # generate corpus + labels (seed 42)
 uv run python scripts/evaluate_extraction.py     # extraction P/R/F1 -> artifacts/
@@ -153,8 +189,9 @@ src/legal_discovery_graph/
 ├── evaluation/      # extraction span matching + retrieval P/R/hit@k scoring
 ├── retrieval/       # embedder, PgVectorStore, SemanticRetriever, HybridRetriever (LangChain)
 ├── graph/           # Neo4j driver boundary (store) + fact-derived payload builder (loader)
-└── ui/streamlit_app.py   # health-check app only
-tests/               # 63 tests
+└── ui/              # dashboard: backend (data boundary) → presenters/figures (pure) →
+                     # streamlit_app (wiring); ADR-0012
+tests/               # 88 tests
 scripts/             # bootstrap_data, evaluate_extraction, index_pgvector, load_neo4j,
                      # evaluate_retrieval (real); verify_deployment is a stub
 data/                # generated, gitignored; regenerate via bootstrap_data.py
@@ -174,8 +211,8 @@ data/                # generated, gitignored; regenerate via bootstrap_data.py
 
 ## Next Phase
 
-**Milestone 5 — Investigation dashboard** (`roadmap.md`): full Streamlit UI — question → cited
-evidence view (hybrid retrieval with per-chunk graph evidence trails), interactive Plotly
-entity graph, timeline view, evaluation metrics page, and degraded-mode handling per
-`architecture.md` failure boundaries (vector and graph legs fail independently;
-`HybridResult.graph_available` already carries the signal). Await approval before starting.
+**Milestone 6 — Public deployment** (`roadmap.md`): publish the repo state, export
+`requirements.txt` from `uv.lock`, deploy to Streamlit Community Cloud with secrets configured,
+run the full `DEPLOYMENT.md` smoke-test checklist against the live URL, finish
+`DEMO_SCRIPT.md`, and update `README.md` with the verified live URL. Await approval before
+starting.

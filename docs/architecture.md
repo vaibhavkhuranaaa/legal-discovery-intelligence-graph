@@ -1,9 +1,10 @@
 # Architecture
 
-Target cloud architecture for the deployed system. Milestones 0–4 are implemented: synthetic
-data, extraction, pgvector retrieval, the Neo4j relationship graph, and hybrid vector+graph
-orchestration are verified against live Supabase and AuraDB. The Streamlit investigation UI
-remains planned; `roadmap.md` is the current implementation record.
+Target cloud architecture for the deployed system. Milestones 0–5 are implemented: synthetic
+data, extraction, pgvector retrieval, the Neo4j relationship graph, hybrid vector+graph
+orchestration, and the Streamlit investigation dashboard are verified against live Supabase
+and AuraDB. Public deployment (Milestone 6) remains; `roadmap.md` is the current
+implementation record.
 
 ## System Overview
 
@@ -43,7 +44,7 @@ Evaluation (src/.../evaluation) — precision/recall/F1 vs gold labels (data/lab
 | `retrieval/` | Embedding, pgvector search, LangChain orchestration of vector + graph retrieval |
 | `graph/` | Neo4j driver boundary: schema constraints, loading, Cypher query API |
 | `evaluation/` | Gold-label scoring: extraction and retrieval precision/recall/F1 |
-| `ui/` | Streamlit app: search, graph view, timeline, metrics; no business logic |
+| `ui/` | Streamlit app: search, graph view, timeline, metrics; no business logic. Layered as `backend.py` (only data boundary; explicit outcome objects) → pure `presenters.py`/`figures.py` → `streamlit_app.py` (wiring + caching only) — ADR-0012 |
 | `config.py` | Single settings accessor (`get_settings()`); the only env-var boundary |
 | `models.py` | Pydantic contracts shared across all subsystems; shared IDs across both stores |
 

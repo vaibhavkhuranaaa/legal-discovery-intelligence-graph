@@ -8,8 +8,9 @@ a fixed mapping and are never built from data. Callers interact through
 degraded-mode signal when the graph leg is down or unconfigured.
 """
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from types import TracebackType
 
 import neo4j
@@ -80,8 +81,52 @@ _EXPAND_EVENTS = """
 """
 
 
+_TIMELINE_EVENTS = """
+    MATCH (ev:Event)-[evidenced:EVIDENCED_BY]->(d:Document)
+    OPTIONAL MATCH (ev)-[:INVOLVES]->(e)
+    RETURN ev.event_id AS event_id, ev.occurred_at AS occurred_at,
+           ev.description AS description, d.document_id AS document_id,
+           d.title AS document_title, evidenced.chunk_id AS chunk_id,
+           [name IN collect(e.name) WHERE name IS NOT NULL] AS entity_names
+    ORDER BY ev.occurred_at, ev.event_id
+"""
+
+
 class GraphUnavailableError(Exception):
     """The Neo4j graph is unconfigured or unreachable; the vector leg must carry on."""
+
+
+@dataclass(frozen=True)
+class TimelineEvent:
+    """One extracted event as stored in the graph, with its document provenance."""
+
+    event_id: str
+    occurred_at: datetime
+    description: str
+    document_id: str
+    document_title: str
+    chunk_id: str
+    entity_names: tuple[str, ...]
+
+
+def timeline_event_from_record(record: Mapping[str, object]) -> TimelineEvent:
+    """Convert one timeline query row (Neo4j record or plain mapping) to a model.
+
+    Neo4j returns ``neo4j.time.DateTime`` for stored datetimes; ``to_native()``
+    converts it to ``datetime.datetime``.
+    """
+    occurred_at = record["occurred_at"]
+    if hasattr(occurred_at, "to_native"):
+        occurred_at = occurred_at.to_native()
+    return TimelineEvent(
+        event_id=str(record["event_id"]),
+        occurred_at=occurred_at,  # type: ignore[arg-type]
+        description=str(record["description"]),
+        document_id=str(record["document_id"]),
+        document_title=str(record["document_title"]),
+        chunk_id=str(record["chunk_id"]),
+        entity_names=tuple(sorted(str(name) for name in record["entity_names"])),  # type: ignore[union-attr]
+    )
 
 
 @dataclass(frozen=True)
@@ -278,6 +323,10 @@ class Neo4jGraphStore:
                     )
                 )
         return evidence
+
+    def timeline_events(self) -> list[TimelineEvent]:
+        """All extracted events, chronologically, with document provenance."""
+        return [timeline_event_from_record(record) for record in self._run(_TIMELINE_EVENTS)]
 
     def graph_counts(self) -> dict[str, int]:
         """Node/relationship counts for post-load verification."""

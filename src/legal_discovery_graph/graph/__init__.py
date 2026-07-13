@@ -11,6 +11,8 @@ from legal_discovery_graph.graph.store import (
     GraphEvidence,
     GraphUnavailableError,
     Neo4jGraphStore,
+    TimelineEvent,
+    timeline_event_from_record,
 )
 
 __all__ = [
@@ -21,5 +23,7 @@ __all__ = [
     "MentionEdge",
     "Neo4jGraphStore",
     "ParticipantEdge",
+    "TimelineEvent",
     "build_graph_payload",
+    "timeline_event_from_record",
 ]

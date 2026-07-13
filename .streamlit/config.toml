@@ -1,5 +1,9 @@
 [server]
 headless = true
+# PyTorch (loaded by sentence-transformers) can crash Streamlit's module file
+# watcher (segfault introspecting torch.classes); the app needs no hot-reload
+# against read-only cloud stores, so the watcher stays off.
+fileWatcherType = "none"
 
 [browser]
 gatherUsageStats = false
