@@ -1,9 +1,8 @@
 # Data & Evaluation
 
-Data generation is implemented (Milestone 1); evaluation scoring is not. **No quality metrics
-are reported yet** — extraction and retrieval metrics appear only after the extraction and
-retrieval milestones run, and every reported number must be reproducible from a committed
-command.
+Data generation (Milestone 1) and extraction evaluation (Milestone 2) are implemented;
+retrieval evaluation arrives with Milestone 3. Every number below is reproducible from a
+committed command and regenerated artifacts — nothing is hand-entered from memory.
 
 ## Synthetic Corpus (implemented)
 
@@ -16,7 +15,9 @@ corpus (byte-identical per seed, regression-tested):
   documents plus ~90 routine noise documents (facilities notices, unrelated invoices, routine
   memos) so retrieval is non-trivial.
 - At the default seed 42: **111 documents** (63 emails, 21 invoices, 17 memos, 9 meeting notes,
-  1 contract), 112 chunks, 147 entities, 573 gold mentions, 12 events, **32 gold queries**.
+  1 contract), 112 chunks, 149 entities, 583 gold mentions, 12 events, **32 gold queries**
+  (generator v2: informal name references like "Daniel," / "Mr. Reyes" and incidental
+  locations are gold-labeled too, so NER is not penalized for finding them).
 - All names, organizations, amounts, and events are fictional; email domains use `.example`
   (see `product.md`, synthetic-data policy).
 - Mechanics of determinism and label exactness (uuid5 IDs, composer offset tracking): ADR-0008.
@@ -54,7 +55,43 @@ overlap):
 - **Recall** = correct predicted mentions / all gold mentions
 - **F1** = harmonic mean, reported per entity type and micro-averaged overall
 
-Both strict (exact span) and relaxed (overlap) matching will be reported and labeled as such.
+Both strict (exact span) and relaxed (overlap) matching are reported; matching is one-to-one
+greedy within each (document, entity type) group.
+
+**Measured results (Milestone 2)** — reproduce with
+`uv run python scripts/bootstrap_data.py && uv run python scripts/evaluate_extraction.py`
+(seed 42, spaCy `en_core_web_sm` 3.8.0 pinned; full breakdown in
+`artifacts/extraction_metrics.json`):
+
+| Type | P (strict) | R (strict) | F1 (strict) | P (relaxed) | R (relaxed) | F1 (relaxed) |
+|---|---|---|---|---|---|---|
+| person | 0.996 | 0.838 | 0.910 | 0.996 | 0.838 | 0.910 |
+| organization | 0.635 | 0.742 | 0.684 | 0.712 | 0.831 | 0.767 |
+| money | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| date | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| project | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| location | 0.652 | 1.000 | 0.789 | 0.652 | 1.000 | 0.789 |
+| **micro** | **0.903** | **0.877** | **0.889** | **0.917** | **0.890** | **0.903** |
+| events (doc+date) | 1.000 | 1.000 | 1.000 | | | |
+
+**Honest reading of these numbers** (extraction design: ADR-0009):
+
+- Regex-owned types (money, date, project) are perfect *by construction* — the corpus generator
+  and the extractor independently implement the same textual conventions. On real documents
+  with messy formats these would drop.
+- The small NER model's real error profile is visible in organization/location: it misses some
+  vendor names ("Lakeshore Catering", "Ironwood Legal LLP"), over-predicts department-like
+  phrases ("Finance", "Audit Committee", "Internal Audit") and the venue "Hillside Grill" as
+  organizations, and misses bare first names in email signatures — deliberately not patched
+  with corpus-specific rules.
+- Event scores reflect a trigger lexicon designed for this procurement/audit domain plus a
+  participants-required rule; recall is bounded by lexicon coverage.
+- Above all: this is templated synthetic text (ADR-0005). These scores overstate real-world
+  performance and are presented as evidence the *pipeline and evaluation harness work*, not as
+  NER benchmarks.
+
+Regression floors (relaxed micro F1 ≥ 0.85, strict ≥ 0.75, events ≥ 0.90) run in CI via
+`tests/test_evaluation.py`.
 
 ### Retrieval
 

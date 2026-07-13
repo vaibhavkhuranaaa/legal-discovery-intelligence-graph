@@ -20,7 +20,7 @@ from legal_discovery_graph.ids import stable_id
 from legal_discovery_graph.ingestion.pipeline import IngestionReport, process_raw_dir
 from legal_discovery_graph.models import Chunk, Entity, EntityMention, Event
 
-GENERATOR_VERSION = "1"
+GENERATOR_VERSION = "2"  # v2: informal name references and incidental locations gold-labeled
 
 
 @dataclass

@@ -2,11 +2,17 @@
 
 **GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
 
-> **Status: in development — Milestones 0–1 of 6 complete.** Foundation and the synthetic
-> corpus generator (deterministic corpus + gold labels) are done; extraction, retrieval, graph,
-> dashboard, and the public deployment are being built milestone by milestone
-> (see [docs/roadmap.md](docs/roadmap.md)). No live URL or evaluation metrics exist yet — none
-> are claimed.
+> **Status: in development — Milestones 0–2 of 6 complete.** Foundation, the synthetic corpus
+> generator (deterministic corpus + gold labels), and entity/event extraction with a
+> reproducible evaluation harness are done; retrieval, graph, dashboard, and the public
+> deployment are being built milestone by milestone (see [docs/roadmap.md](docs/roadmap.md)).
+> No live URL exists yet — none is claimed.
+>
+> **First measured results** (synthetic corpus, seed 42 — reproduce with
+> `uv run python scripts/bootstrap_data.py && uv run python scripts/evaluate_extraction.py`):
+> entity-mention extraction micro **F1 0.889 strict / 0.903 relaxed**; event extraction
+> **F1 1.000**. Scores are inflated by clean templated text — see the honest error profile in
+> [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md).
 
 A **Graph RAG eDiscovery investigation platform**. Given a corpus of discovery documents
 (emails, contracts, memos, invoices, meeting notes), it extracts entities and events, indexes
@@ -61,11 +67,12 @@ cp .env.example .env       # fill in backend credentials when cloud milestones b
 uv run pytest              # tests
 uv run ruff check .        # lint
 uv run python scripts/bootstrap_data.py    # generate the synthetic corpus + gold labels
+uv run python scripts/evaluate_extraction.py   # extraction P/R/F1 -> artifacts/
 uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # health-check app
 ```
 
 `bootstrap_data.py` deterministically generates the fictional "Project Falcon" investigation
-corpus (111 documents at the default seed) with exact gold labels — 573 entity mentions,
+corpus (111 documents at the default seed) with exact gold labels — 583 entity mentions,
 12 events, and 32 categorized retrieval queries (including 4 negative queries for refusal
 evaluation) — see
 [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md). The health-check app currently

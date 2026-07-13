@@ -171,3 +171,39 @@ tweaked, breaking label diffs across generator versions for unchanged documents)
 later milestones reuse for citation highlighting. Generator authors must follow the composer
 mention discipline — a plain-text entity name in a template silently becomes a false negative in
 the gold labels.
+
+---
+
+## ADR-0009: Two-lane extraction with a hard no-gold-leakage boundary
+
+**Context:** Milestone 2 extracts entities/events and scores them against generation-time gold
+labels. The largest credibility risk is circularity: the generator's entity catalog exists in
+the same repository, and using it as a gazetteer would produce near-perfect but meaningless
+metrics.
+
+**Decision:** (a) **Two lanes** — deterministic regex owns the rule-shaped types (MONEY, DATE,
+PROJECT via `Project <ProperNoun>`); spaCy `en_core_web_sm` NER owns the name-shaped types
+(PERSON, ORGANIZATION, LOCATION). On span overlap the regex lane wins, and NER money/date
+output is discarded. (b) **Leakage ban** — extraction code must not import `datagen` or read
+`data/labels/`; enforced by an AST-based test (`test_no_gold_leakage_in_extraction_sources`).
+(c) **Deterministic post-rules**, each generic rather than corpus-tuned: NER runs per paragraph
+(spans never cross paragraph boundaries), identifier-shaped surfaces (`RFP-2023`) are rejected,
+comma-adjacent location spans coalesce ("Denver" + "Colorado" → "Denver, Colorado"), and each
+surface's entity type is corpus-majority-voted so a name typed PERSON in ten documents and ORG
+in one is unified. (d) **Resolution** is rule-based folding (initial+surname, unique
+prefix/suffix, numeric/date canonicalization) with deterministic uuid5 entity IDs.
+(e) The NER model is **pinned as a direct wheel** in the dev dependency group — reproducible
+installs, no runtime downloads, excluded from the deployed app's requirements.
+
+**Alternatives considered:** Gazetteer lookup from the generated catalog (rejected — circular
+evaluation); a larger spaCy model or transformer NER (better accuracy, but slower CI and the
+small model's honest error profile is itself demonstrative); LLM-based extraction (
+non-deterministic, adds cost/keys, and undermines the reproducibility claims).
+
+**Consequences:** Metrics are honest and reproducible (`uv run python
+scripts/evaluate_extraction.py`). Known error profile documented in
+`DATA_AND_EVALUATION.md`: the small model misses some org names and bare first names in
+signatures, and over-predicts department-like phrases ("Finance", "Audit Committee") as
+organizations — left in as genuine model behavior, not patched with corpus-specific rules.
+Event extraction uses a transaction-vocabulary trigger lexicon plus a participants-required
+rule; recall is bounded by lexicon coverage by design.

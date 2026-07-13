@@ -119,6 +119,8 @@ class Cast:
         self.falcon = make_entity(EntityType.PROJECT, "project-falcon", "Project Falcon")
         self.denver = make_entity(EntityType.LOCATION, "denver", "Denver, Colorado")
         self.reno = make_entity(EntityType.LOCATION, "reno", "Reno, Nevada")
+        self.delaware = make_entity(EntityType.LOCATION, "delaware", "Delaware")
+        self.nevada = make_entity(EntityType.LOCATION, "nevada", "Nevada")
 
         self.contract_value = money_entity(2_400_000)
         self.apex_bid = money_entity(1_800_000)
@@ -229,7 +231,8 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
         dt(2023, 2, 4),
         "yesterday",
     )
-    c.text("Daniel — good to catch up. ").mention(cast.northgate, "Northgate")
+    c.mention(cast.reyes, "Daniel").text(" — good to catch up. ")
+    c.mention(cast.northgate, "Northgate")
     c.text(" will be ready when the solicitation posts. I'll have ")
     c.mention(cast.crestline).text(" paperwork finalized this month so the consulting ")
     c.text("arrangement is in place before any funds move. Talk soon. — ")
@@ -284,7 +287,7 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
     )
     c.text("Subject: RFP-2023-011 — ").mention(cast.apex, "Apex Components")
     c.text(" bid submission").para()
-    c.text("Dear Mr. Reyes,").para()
+    c.text("Dear Mr. ").mention(cast.reyes, "Reyes").text(",").para()
     c.text("Please find attached the sealed bid from ").mention(cast.apex)
     c.text(" for RFP-2023-011. Our total fixed price for the ").mention(cast.falcon)
     c.text(" avionics scope is ").mention(cast.apex_bid)
@@ -321,7 +324,7 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
         None,
     )
     c.text("Subject: RFP-2023-011 — ").mention(cast.northgate).text(" proposal").para()
-    c.text("Mr. Reyes,").para()
+    c.text("Mr. ").mention(cast.reyes, "Reyes").text(",").para()
     c.text("On behalf of ").mention(cast.northgate).text(", I am pleased to submit our ")
     c.text("proposal for RFP-2023-011. Our total price for the ").mention(cast.falcon)
     c.text(" avionics scope is ").mention(cast.contract_value)
@@ -394,7 +397,7 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
         dt(2023, 3, 25),
         "award posted",
     )
-    c.text("Olivia — the award memo went out yesterday. ")
+    c.mention(cast.tran, "Olivia").text(" — the award memo went out yesterday. ")
     c.mention(cast.northgate, "Northgate").text(" should receive the countersignature ")
     c.text("package next week. Let's keep the other matter to the channel we discussed. — D.")
     congrats = DraftDocument(
@@ -412,9 +415,11 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
     c.text("MASTER SUPPLY AGREEMENT No. MSA-2023-004").para()
     c.text("Effective Date: ").mention(date_entity(dt(2023, 4, 5))).para()
     c.text("This Master Supply Agreement is entered into between ")
-    c.mention(cast.meridian).text(", a Delaware corporation with principal offices in ")
+    c.mention(cast.meridian).text(", a ").mention(cast.delaware, "Delaware")
+    c.text(" corporation with principal offices in ")
     c.mention(cast.denver).text(' ("Buyer"), and ').mention(cast.northgate)
-    c.text(", a Nevada limited liability company registered in ").mention(cast.reno)
+    c.text(", a ").mention(cast.nevada, "Nevada")
+    c.text(" limited liability company registered in ").mention(cast.reno)
     c.text(' ("Supplier").').para()
     c.text("1. Scope. Supplier shall furnish avionics units, integration hardware, and ")
     c.text("certification support for the ").mention(cast.falcon).text(" program.").para()
@@ -523,13 +528,13 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
         None,
     )
     c.text("Subject: ").mention(cast.northgate, "Northgate").text(" invoice growth").para()
-    c.text("Marcus,").para()
+    c.mention(cast.webb, "Marcus").text(",").para()
     c.text("Flagging a pattern in accounts payable: ").mention(cast.northgate)
     c.text(" invoices on ").mention(cast.falcon).text(" have increased every month ")
     c.text("since May while the delivery reports attached to them are nearly ")
     c.text("identical. August's draft invoice is ").mention(money_entity(395_000))
     c.text(" against a May baseline of ").mention(money_entity(310_000)).text(".").para()
-    c.text("Elena")
+    c.mention(cast.vasquez, "Elena")
     ap_flag = DraftDocument(
         doc_type=DocumentType.EMAIL,
         title="Northgate invoice growth",
@@ -552,7 +557,7 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
         None,
     )
     c.text("Subject: ").mention(cast.falcon).text(" invoice variance").para()
-    c.text("Daniel,").para()
+    c.mention(cast.reyes, "Daniel").text(",").para()
     c.text("Finance is seeing a 27% escalation in ").mention(cast.northgate, "Northgate")
     c.text(" monthly billing on ").mention(cast.falcon).text(" with no corresponding ")
     c.text("change in delivered scope. Before I approve the August payment run, I need ")
@@ -592,7 +597,7 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
     )
     c.text("Subject: Internal audit — ").mention(cast.falcon)
     c.text(" procurement (document hold)").para()
-    c.text("Mr. Reyes,").para()
+    c.text("Mr. ").mention(cast.reyes, "Reyes").text(",").para()
     c.text("Internal Audit has opened engagement IA-2023-19 covering ")
     c.mention(cast.falcon).text(" procurement, effective today. Please preserve and ")
     c.text("produce: the RFP-2023-011 evaluation file, all ")

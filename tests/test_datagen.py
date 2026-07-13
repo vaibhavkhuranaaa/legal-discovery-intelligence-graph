@@ -130,7 +130,14 @@ def test_gold_mentions_are_complete_for_catalog_surfaces(
             while start != -1:
                 end = start + len(surface)
                 covered = any(
-                    span_start <= start and end <= span_end and entity_id in owners
+                    span_start <= start
+                    and end <= span_end
+                    and (
+                        entity_id in owners
+                        # A different entity's strictly larger span may contain
+                        # this surface (e.g. "Nevada" inside "Reno, Nevada").
+                        or (span_end - span_start) > (end - start)
+                    )
                     for span_start, span_end, entity_id in spans
                 )
                 assert covered, (

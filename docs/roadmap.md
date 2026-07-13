@@ -26,14 +26,17 @@ Exit criteria met: byte-identical regeneration for the same seed (regression-tes
 gold-label completeness regression test (every canonical name/alias occurrence in every body is
 covered by an exact-offset mention of the same entity); 20 tests passing.
 
-## Milestone 2 — Entity & event extraction ⬜
+## Milestone 2 — Entity & event extraction ✅
 
-`extraction/`: spaCy NER + deterministic regex extractors (money, dates, invoice IDs), entity
-resolution to canonical IDs, event extraction. First evaluation run: extraction
-precision/recall/F1 against gold labels.
+`extraction/`: two-lane extraction (deterministic regex for money/date/project + spaCy
+`en_core_web_sm` NER for person/organization/location, regex wins on overlap), deterministic
+entity resolution (short-form folding, majority type voting, uuid5 IDs), and trigger-lexicon
+event extraction (ADR-0009). `evaluation/`: strict/relaxed one-to-one span matching with
+per-type and micro P/R/F1. Gold-leakage ban enforced by test.
 
-Exit criteria: extraction metrics reproducible via a single `uv run` command; documented in
-`DATA_AND_EVALUATION.md`.
+Exit criteria met: metrics reproducible via `uv run python scripts/evaluate_extraction.py`
+(micro F1 0.889 strict / 0.903 relaxed, events 1.000 at seed 42) and documented with an honest
+error profile in `DATA_AND_EVALUATION.md`; regression floors in CI; 32 tests passing.
 
 ## Milestone 3 — Semantic retrieval (pgvector) ⬜
 
