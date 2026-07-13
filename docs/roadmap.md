@@ -12,15 +12,19 @@ domain models, documentation set, standards imported, minimal Streamlit health-c
 Exit criteria: `uv sync`, `uv run pytest`, `uv run ruff check .` all pass; health-check app
 serves locally.
 
-## Milestone 1 — Synthetic corpus & gold labels ⬜
+## Milestone 1 — Synthetic corpus & gold labels ✅
 
-Implement `scripts/bootstrap_data.py`: seedable generator producing the fictional investigation
-corpus (emails, contracts, memos, invoices, meeting notes) into `data/raw/` plus gold entity/
-event/retrieval labels into `data/labels/` (see `DATA_AND_EVALUATION.md`). Ingestion module:
-normalization and chunking into `data/processed/`.
+Implemented `scripts/bootstrap_data.py`: seedable generator producing the fictional
+"Project Falcon" procurement-fraud corpus (111 documents at seed 42 — emails, contracts, memos,
+invoices, meeting notes) into `data/raw/` plus gold entity/event/retrieval labels into
+`data/labels/` (see `DATA_AND_EVALUATION.md` and ADR-0008), including **32 categorized gold
+queries** (entity, relationship, event, document-evidence, financial, plus 4 negative queries
+with empty relevant sets for refusal evaluation). Ingestion module chunks into
+`data/processed/` with failure quarantine to `data/failed/`.
 
-Exit criteria: deterministic regeneration (same seed → identical corpus), unit-tested generator
-and chunker.
+Exit criteria met: byte-identical regeneration for the same seed (regression-tested);
+gold-label completeness regression test (every canonical name/alias occurrence in every body is
+covered by an exact-offset mention of the same entity); 20 tests passing.
 
 ## Milestone 2 — Entity & event extraction ⬜
 

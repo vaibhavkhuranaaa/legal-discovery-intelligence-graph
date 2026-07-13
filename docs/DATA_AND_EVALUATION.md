@@ -1,30 +1,44 @@
 # Data & Evaluation
 
-Planned data-generation and evaluation methodology. **No metrics are reported yet** — nothing
-has been generated or scored. Numbers appear here only after the evaluation milestone runs, and
-every reported number must be reproducible from a committed command.
+Data generation is implemented (Milestone 1); evaluation scoring is not. **No quality metrics
+are reported yet** — extraction and retrieval metrics appear only after the extraction and
+retrieval milestones run, and every reported number must be reproducible from a committed
+command.
 
-## Synthetic Corpus
+## Synthetic Corpus (implemented)
 
-`scripts/bootstrap_data.py` (data-generation milestone) will produce a seedable, deterministic
-corpus in `data/raw/`:
+`uv run python scripts/bootstrap_data.py [--seed N] [--data-dir PATH]` produces a deterministic
+corpus (byte-identical per seed, regression-tested):
 
-- ~100–200 documents across five types: emails, contracts, memos, invoices, meeting notes.
-- A coherent fictional investigation scenario (e.g. a procurement-fraud fact pattern) so graph
-  queries and the timeline have meaningful structure — not random text.
-- Fixed random seed → identical corpus, labels, and therefore metrics on every regeneration.
-- All names, organizations, amounts, and events fictional (see `product.md`,
-  synthetic-data policy).
+- The fictional **"Project Falcon" procurement-fraud scenario**: a procurement director steers
+  an avionics contract to a shell vendor in exchange for kickbacks routed through a holding
+  company, until an internal audit unravels it (`datagen/scenario.py`) — 21 planted evidence
+  documents plus ~90 routine noise documents (facilities notices, unrelated invoices, routine
+  memos) so retrieval is non-trivial.
+- At the default seed 42: **111 documents** (63 emails, 21 invoices, 17 memos, 9 meeting notes,
+  1 contract), 112 chunks, 147 entities, 573 gold mentions, 12 events, **32 gold queries**.
+- All names, organizations, amounts, and events are fictional; email domains use `.example`
+  (see `product.md`, synthetic-data policy).
+- Mechanics of determinism and label exactness (uuid5 IDs, composer offset tracking): ADR-0008.
 
-## Gold Labels (`data/labels/`)
+## Gold Labels (`data/labels/`) (implemented)
 
-Emitted by the generator at creation time, because the generator knows exactly what it planted:
+Emitted at generation time, because the generator knows exactly what it planted:
 
-1. **Entity labels** — per document: every entity mention with type, canonical entity ID,
-   surface text, and character offsets.
-2. **Event labels** — per document: dated events with involved entity IDs.
-3. **Retrieval labels** — a query set (~25–50 investigative questions) each mapped to the set
-   of chunk IDs that constitute relevant evidence.
+1. **`entities.json`** — canonical entity catalog (id, type, name, aliases).
+2. **`mentions.jsonl`** — every entity mention: entity ID, document ID, covering chunk ID,
+   surface text, and document-level character offsets (`body[start:end] == surface`,
+   regression-tested).
+3. **`events.jsonl`** — dated events with involved entity IDs and the evidencing document.
+4. **`retrieval.jsonl`** — 32 investigative questions, each with a `category` (5 entity-lookup,
+   6 relationship, 7 event/timeline, 5 document-evidence, 5 financial/invoice, 4 negative), an
+   `is_answerable` flag, and the relevant document IDs, chunk IDs, and planted evidence
+   snippets those chunks contain. The 4 **negative queries** have empty relevant sets by
+   design — they score refusal/no-evidence behavior in later milestones.
+
+**Label completeness is regression-tested:** every occurrence of a canonical entity name or
+alias in any document body must be covered by a gold mention span of that same entity with
+exact character offsets (`tests/test_datagen.py::test_gold_mentions_are_complete_for_catalog_surfaces`).
 
 Labels are generated data (gitignored) but exactly reproducible from the committed generator +
 seed.
@@ -51,6 +65,9 @@ evidence set):
 - **Hit rate** — fraction of queries with ≥1 relevant chunk in top-k
 - Vector-only vs vector+graph-expansion reported separately, so the graph's contribution is
   measured, not asserted.
+- **Negative queries** (empty gold relevant set) are scored separately for no-evidence
+  behavior: the system should refuse or return an explicit no-evidence state rather than
+  presenting irrelevant chunks as support.
 
 ### Reporting rules
 

@@ -2,8 +2,9 @@
 
 **GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
 
-> **Status: Foundation in progress.** The repository scaffold, tooling, and architecture are in
-> place; investigation features and the public deployment are being built milestone by milestone
+> **Status: in development — Milestones 0–1 of 6 complete.** Foundation and the synthetic
+> corpus generator (deterministic corpus + gold labels) are done; extraction, retrieval, graph,
+> dashboard, and the public deployment are being built milestone by milestone
 > (see [docs/roadmap.md](docs/roadmap.md)). No live URL or evaluation metrics exist yet — none
 > are claimed.
 
@@ -59,11 +60,17 @@ cp .env.example .env       # fill in backend credentials when cloud milestones b
 
 uv run pytest              # tests
 uv run ruff check .        # lint
+uv run python scripts/bootstrap_data.py    # generate the synthetic corpus + gold labels
 uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # health-check app
 ```
 
-The health-check app currently renders "Legal Discovery Intelligence Graph — Foundation Ready";
-investigation features land in later milestones.
+`bootstrap_data.py` deterministically generates the fictional "Project Falcon" investigation
+corpus (111 documents at the default seed) with exact gold labels — 573 entity mentions,
+12 events, and 32 categorized retrieval queries (including 4 negative queries for refusal
+evaluation) — see
+[docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md). The health-check app currently
+renders "Legal Discovery Intelligence Graph — Foundation Ready"; investigation features land in
+later milestones.
 
 ## Planned Deployment
 

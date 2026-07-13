@@ -63,6 +63,9 @@ known-first-party = ["legal_discovery_graph"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]  # assert is expected in tests
+# Seedable, reproducible synthetic-data generation is the purpose of this package;
+# `random` is used deliberately and never for security.
+"src/legal_discovery_graph/datagen/*" = ["S311"]
 
 [tool.ruff.format]
 quote-style = "double"

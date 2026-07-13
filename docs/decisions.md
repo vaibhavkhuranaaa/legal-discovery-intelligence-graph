@@ -141,3 +141,33 @@ violates the Community Cloud memory ceiling per ADR-0006).
 **Consequences:** Zero embedding cost, fully reproducible vectors, one fewer secret. Tradeoff:
 retrieval quality below state-of-the-art APIs — acceptable and measured honestly by the
 evaluation harness.
+
+---
+
+## ADR-0008: Deterministic uuid5 IDs and composer-tracked gold labels for generated data
+
+**Context:** Milestone 1's exit criterion is byte-identical regeneration for a given seed, and
+the evaluation methodology depends on exact gold labels. `models.py` defaults to random uuid4
+IDs, and hand-annotating mention offsets after generation would be error-prone and expensive.
+
+**Decision:** (a) Generated objects mint IDs via `uuid5` over stable key parts
+(`legal_discovery_graph/ids.py`) — e.g. `("doc", seed, index)`, `("chunk", document_id,
+sequence)` — while uuid4 remains the runtime default for non-generated objects. (b) Document
+text is assembled through a `Composer` that records the exact character span of every entity
+mention as the text is built (`datagen/composer.py`); scenario templates never write an entity
+name as plain text, which is the discipline that makes recall labels complete. (c) Timestamps
+come from the scenario clock, never `now()`. (d) The bootstrap writes raw files and then runs
+the real ingestion pipeline over them (not an in-memory shortcut), so label resolution — mention
+→ covering chunk, evidence snippet → containing chunk — is performed against exactly the chunks
+any consumer will see, and serialization bugs surface immediately.
+
+**Alternatives considered:** Post-hoc annotation by string search over generated text (breaks on
+repeated surfaces and alias forms; offsets not guaranteed unique); seeding Python's `uuid4` (not
+possible — it reads OS entropy); hashing content for IDs (IDs would change whenever wording is
+tweaked, breaking label diffs across generator versions for unchanged documents).
+
+**Consequences:** Same seed → byte-identical `data/raw/`, `data/processed/`, and `data/labels/`
+(regression-tested). Chunks carry `start_char`/`end_char` document offsets in metadata, which
+later milestones reuse for citation highlighting. Generator authors must follow the composer
+mention discipline — a plain-text entity name in a template silently becomes a false negative in
+the gold labels.
