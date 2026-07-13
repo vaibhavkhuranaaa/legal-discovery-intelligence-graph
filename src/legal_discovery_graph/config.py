@@ -12,7 +12,10 @@ credentials are ever hardcoded or committed.
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 class Settings(BaseSettings):
@@ -35,11 +38,18 @@ class Settings(BaseSettings):
     neo4j_password: str = ""
 
     # Embeddings
-    embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    embedding_model_name: str = _DEFAULT_EMBEDDING_MODEL
 
     # Application behavior
     app_env: str = "development"
     log_level: str = "INFO"
+
+    @field_validator("embedding_model_name", mode="before")
+    @classmethod
+    def _default_when_blank(cls, value: str) -> str:
+        # A blank EMBEDDING_MODEL_NAME= line in .env must mean "use the default",
+        # not "use the empty string" (which SentenceTransformer rejects cryptically).
+        return value.strip() or _DEFAULT_EMBEDDING_MODEL
 
 
 @lru_cache(maxsize=1)

@@ -1,7 +1,8 @@
 # Data & Evaluation
 
-Data generation (Milestone 1) and extraction evaluation (Milestone 2) are implemented;
-retrieval evaluation arrives with Milestone 3. Every number below is reproducible from a
+Data generation (Milestone 1), extraction evaluation (Milestone 2), and vector-only retrieval
+evaluation (Milestone 3) are implemented; graph-expanded retrieval evaluation arrives with
+Milestone 4. Every number below is reproducible from a
 committed command and regenerated artifacts — nothing is hand-entered from memory.
 
 ## Synthetic Corpus (implemented)
@@ -105,6 +106,35 @@ evidence set):
 - **Negative queries** (empty gold relevant set) are scored separately for no-evidence
   behavior: the system should refuse or return an explicit no-evidence state rather than
   presenting irrelevant chunks as support.
+
+#### Measured — Milestone 3, vector-only (seed 42, run 2026-07-13)
+
+`sentence-transformers/all-MiniLM-L6-v2` (normalized, 384-dim) over Supabase pgvector with an
+HNSW cosine index; 28 answerable + 4 negative queries, top-10 retrieved per query,
+macro-averaged. Reproduce with `uv run python scripts/evaluate_retrieval.py` (full numbers in
+`artifacts/retrieval_metrics.json`).
+
+| scope | P@1 | R@1 | hit@1 | R@5 | hit@5 | R@10 | hit@10 |
+|---|---|---|---|---|---|---|---|
+| overall | 0.607 | 0.554 | 0.607 | 0.857 | 0.893 | 0.929 | 0.964 |
+| document | 0.400 | 0.400 | 0.400 | 1.000 | 1.000 | 1.000 | 1.000 |
+| entity | 0.400 | 0.300 | 0.400 | 0.900 | 1.000 | 0.900 | 1.000 |
+| event | 0.857 | 0.857 | 0.857 | 1.000 | 1.000 | 1.000 | 1.000 |
+| financial | 1.000 | 0.900 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| relationship | 0.333 | 0.250 | 0.333 | 0.417 | 0.500 | 0.750 | 0.833 |
+
+Honest findings, kept as-is rather than tuned away:
+
+- **Relationship queries are the weakest lane** (hit@5 0.500 vs ≥ 1.000 for every other
+  category). Multi-hop questions ("who connects X to Y?") are exactly what pure vector
+  similarity cannot answer — this gap is the measured baseline the Milestone 4 graph expansion
+  must improve on.
+- **Top-1 similarity alone cannot drive refusal.** The best-scoring chunk for the four negative
+  queries reaches cosine similarity 0.492, while some answerable queries' top hits score as low
+  as 0.379 — the distributions overlap, so a plain score threshold would either miss refusals
+  or refuse answerable queries. Refusal handling in the dashboard milestone must therefore use
+  more than the raw top-1 score (per-query score margins and/or graph corroboration). No
+  threshold was tuned on these 32 queries.
 
 ### Reporting rules
 

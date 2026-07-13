@@ -1,8 +1,8 @@
 # Data Model
 
-Planned storage model across the two backends. Source-of-truth Pydantic contracts:
-`src/legal_discovery_graph/models.py`. Not yet provisioned — this is the design the retrieval
-and graph milestones implement.
+Storage model across the two backends. Source-of-truth Pydantic contracts:
+`src/legal_discovery_graph/models.py`. PostgreSQL + pgvector is provisioned and implemented in
+Milestone 3; the Neo4j graph model remains the design for Milestone 4.
 
 ## Shared Identity Across Systems
 

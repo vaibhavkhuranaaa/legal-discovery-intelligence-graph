@@ -38,13 +38,20 @@ Exit criteria met: metrics reproducible via `uv run python scripts/evaluate_extr
 (micro F1 0.889 strict / 0.903 relaxed, events 1.000 at seed 42) and documented with an honest
 error profile in `DATA_AND_EVALUATION.md`; regression floors in CI; 32 tests passing.
 
-## Milestone 3 — Semantic retrieval (pgvector) ⬜
+## Milestone 3 — Semantic retrieval (pgvector) ✅
 
-Provision Supabase; apply the `DATA_MODEL.md` schema; `retrieval/` embeds chunks
-(sentence-transformers) and implements vector search; `scripts/index_pgvector.py` loads the
-corpus. Retrieval metrics (precision/recall@k, hit rate) against gold queries.
+Supabase provisioned; `DATA_MODEL.md` schema applied (documents/chunks/entity_mentions +
+HNSW cosine index). `retrieval/`: lazy sentence-transformers embedder (normalized MiniLM-L6-v2,
+384-dim, asserted against the schema), `PgVectorStore` (atomic replace-on-index, cosine
+search), `SemanticRetriever` (ADR-0010). `scripts/index_pgvector.py` embeds and loads the
+corpus with DB-side count verification; `scripts/evaluate_retrieval.py` scores all 32 gold
+queries and writes `artifacts/retrieval_metrics.json`.
 
-Exit criteria: cloud round-trip verified from local app; retrieval metrics recorded.
+Exit criteria met: cloud round-trip verified against Supabase (111 documents, 112 chunks
+indexed and searched); metrics recorded at seed 42 — macro R@5 0.857 / hit@5 0.893, R@10 0.929
+/ hit@10 0.964; relationship queries weakest (hit@5 0.500 — the measured baseline for the
+Milestone 4 graph); negative-query top-1 scores overlap answerable ones, so refusal needs more
+than a similarity threshold (`DATA_AND_EVALUATION.md`). 43 tests passing.
 
 ## Milestone 4 — Relationship graph (Neo4j AuraDB) ⬜
 

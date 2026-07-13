@@ -62,3 +62,11 @@ def test_event_is_timeline_ready() -> None:
 def test_ids_are_unique() -> None:
     ids = {Document(doc_type=DocumentType.INVOICE, title="inv").document_id for _ in range(50)}
     assert len(ids) == 50
+
+
+def test_blank_embedding_model_name_falls_back_to_default() -> None:
+    from legal_discovery_graph.config import Settings
+
+    # A blank EMBEDDING_MODEL_NAME= line in .env must not override the default.
+    settings = Settings(embedding_model_name="  ")
+    assert settings.embedding_model_name == "sentence-transformers/all-MiniLM-L6-v2"

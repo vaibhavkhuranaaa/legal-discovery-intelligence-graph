@@ -207,3 +207,36 @@ signatures, and over-predicts department-like phrases ("Finance", "Audit Committ
 organizations — left in as genuine model behavior, not patched with corpus-specific rules.
 Event extraction uses a transaction-vocabulary trigger lexicon plus a participants-required
 rule; recall is bounded by lexicon coverage by design.
+
+---
+
+## ADR-0010: Vector retrieval — pgvector text literals, replace-on-index, untuned refusal
+
+**Context:** Milestone 3 stores chunk embeddings in Supabase PostgreSQL + pgvector and scores
+retrieval against the 32 gold queries. The design choices that needed deciding: how embeddings
+cross the driver boundary, how re-indexing behaves, and what to claim about refusal on the four
+negative queries.
+
+**Decision:** (a) Embeddings are bound as **pgvector text literals** (`[0.1,0.2,...]`) and
+`CAST(... AS vector)` server-side — plain SQLAlchemy `text()` with bound parameters, no
+driver-level vector adapter registration, no ORM layer for two tables. (b) Indexing is
+**atomic replace-on-index**: one transaction deletes and reloads `documents`/`chunks`. The
+corpus is small and deterministically regenerated, so replace is simpler and safer than upsert
+logic that can leave stale rows. (c) Embeddings are **L2-normalized at encode time** and ranked
+with HNSW `vector_cosine_ops` (`<=>`), matching `docs/DATA_MODEL.md`; the 384-dim schema is
+asserted against the loaded model at index time. (d) The evaluation reports negative-query
+top-1 scores next to the answerable distribution but deliberately **does not tune a refusal
+threshold** — 32 queries offer no held-out set, and the measured distributions overlap
+(negative max 0.492 > answerable min 0.379), so a threshold fitted here would be circular.
+
+**Alternatives considered:** `pgvector.sqlalchemy.Vector` column types + ORM (more machinery
+than two tables warrant); LangChain's `PGVector` vectorstore (owns its own schema — conflicts
+with the shared-ID contract that Neo4j joins against); incremental upserts (stale-row risk for
+zero benefit at this corpus size); tuning a refusal threshold on the gold queries (circular).
+
+**Consequences:** Retrieval metrics are reproducible via `uv run python
+scripts/evaluate_retrieval.py` (measured results in `DATA_AND_EVALUATION.md`). The recorded
+vector-only relationship-query baseline (hit@5 0.500) is the yardstick Milestone 4's graph
+expansion must beat. Refusal handling is explicitly deferred to the dashboard milestone with
+the evidence that raw top-1 similarity is insufficient. `entity_mentions` is created with the
+schema but stays empty until the graph milestone consumes mention provenance.

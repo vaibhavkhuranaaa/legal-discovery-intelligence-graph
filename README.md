@@ -2,16 +2,17 @@
 
 **GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
 
-> **Status: in development — Milestones 0–2 of 6 complete.** Foundation, the synthetic corpus
-> generator (deterministic corpus + gold labels), and entity/event extraction with a
-> reproducible evaluation harness are done; retrieval, graph, dashboard, and the public
-> deployment are being built milestone by milestone (see [docs/roadmap.md](docs/roadmap.md)).
+> **Status: in development — Milestones 0–3 of 6 complete.** Foundation, the synthetic corpus
+> generator (deterministic corpus + gold labels), entity/event extraction, and vector-only
+> pgvector retrieval with reproducible evaluation are done; graph expansion, dashboard, and
+> public deployment remain (see [docs/roadmap.md](docs/roadmap.md)).
 > No live URL exists yet — none is claimed.
 >
-> **First measured results** (synthetic corpus, seed 42 — reproduce with
-> `uv run python scripts/bootstrap_data.py && uv run python scripts/evaluate_extraction.py`):
+> **Measured results** (synthetic corpus, seed 42):
 > entity-mention extraction micro **F1 0.889 strict / 0.903 relaxed**; event extraction
-> **F1 1.000**. Scores are inflated by clean templated text — see the honest error profile in
+> **F1 1.000**; vector-only retrieval **R@5 0.857 / hit@5 0.893** and **R@10 0.929 / hit@10
+> 0.964**. Reproduce with `bootstrap_data.py`, `evaluate_extraction.py`, `index_pgvector.py`,
+> and `evaluate_retrieval.py`; scores are inflated by clean templated text — see
 > [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md).
 
 A **Graph RAG eDiscovery investigation platform**. Given a corpus of discovery documents
@@ -21,12 +22,12 @@ entity/document/event relationships in **Neo4j AuraDB**, and serves an investiga
 **Streamlit dashboard** that answers questions with cited evidence, an interactive entity graph,
 and a case timeline — backed by a reproducible precision/recall/F1 evaluation harness.
 
-## Planned Capabilities
+## Capabilities
 
 - **Entity extraction** — spaCy NER plus deterministic regex extraction (amounts, dates,
   invoice/account identifiers) with entity resolution across documents.
-- **Semantic retrieval** — Hugging Face sentence-transformer embeddings over document chunks,
-  stored and queried in pgvector.
+- **Semantic retrieval (implemented)** — Hugging Face sentence-transformer embeddings over
+  document chunks, stored and queried in Supabase pgvector.
 - **Graph investigation** — Neo4j relationship model (people ↔ organizations ↔ documents ↔
   events) enabling "who communicated with whom about what, when" expansion around retrieved
   evidence.
@@ -68,6 +69,8 @@ uv run pytest              # tests
 uv run ruff check .        # lint
 uv run python scripts/bootstrap_data.py    # generate the synthetic corpus + gold labels
 uv run python scripts/evaluate_extraction.py   # extraction P/R/F1 -> artifacts/
+uv run python scripts/index_pgvector.py        # embed + index Supabase (needs DATABASE_URL)
+uv run python scripts/evaluate_retrieval.py    # retrieval P/R/hit@k -> artifacts/
 uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # health-check app
 ```
 

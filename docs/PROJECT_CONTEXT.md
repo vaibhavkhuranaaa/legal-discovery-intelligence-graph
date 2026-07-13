@@ -1,7 +1,7 @@
 # Project Context — Read This First In A New Session
 
 Self-contained handoff for the **Legal Discovery Intelligence Graph**. Contains only verified
-current state — no aspirations. Last verified: 2026-07-12 (Milestone 2 completion).
+current state — no aspirations. Last verified: 2026-07-13 (Milestone 3 completion).
 
 ## What This Project Is
 
@@ -15,7 +15,7 @@ on Streamlit Community Cloud at Milestone 6. Full design: `product.md`, `archite
 **Repository:** `github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph` (public).
 CI (GitHub Actions): `uv sync --frozen`, `ruff check`, `pytest` on pushes/PRs to `main`.
 
-## Current Status: Milestones 0–2 complete
+## Current Status: Milestones 0–3 complete
 
 **Milestone 0 — Foundation (done):** uv-managed Python 3.12 project (Hatchling, src layout),
 Ruff/pytest baseline, `config.py` (settings singleton), `models.py` (shared-ID Pydantic
@@ -57,7 +57,30 @@ contracts), docs set + 7 imported standards, minimal Streamlit health-check app,
 - Integrity: extraction cannot import `datagen` or read gold labels (AST-enforced test);
   regression floors run in CI.
 
-**Verification (run 2026-07-12):** `uv run pytest` — 32 passed (byte-identical same-seed
+**Milestone 3 — pgvector semantic retrieval (done):**
+
+- Supabase project provisioned by the user; `DATABASE_URL` in `.env` (pooler, port 6543).
+  pgvector 0.8.2 extension enabled; `DATA_MODEL.md` schema applied: `documents`, `chunks`,
+  `entity_mentions` (created, empty until Milestone 4) + HNSW `vector_cosine_ops` index.
+- `retrieval/`: `SentenceTransformerEmbedder` (lazy-loaded `all-MiniLM-L6-v2`, normalized,
+  384-dim asserted against schema), `PgVectorStore` (atomic replace-on-index, embeddings bound
+  as pgvector text literals + server-side CAST, cosine search returning scored
+  `RetrievedChunk`s), `SemanticRetriever` composing both (ADR-0010).
+- `scripts/index_pgvector.py` embeds `data/processed/chunks.jsonl` and loads the corpus with
+  DB-side count verification; `scripts/evaluate_retrieval.py` runs all 32 gold queries against
+  the live store → `artifacts/retrieval_metrics.json` + `retrieval_results.jsonl`;
+  `evaluation/retrieval_eval.py` computes macro P/R/hit@{1,3,5,10}, overall and per category.
+- **Measured (seed 42, vector-only):** overall R@5 0.857 / hit@5 0.893, R@10 0.929 / hit@10
+  0.964; event/financial/document near-perfect by k=5; relationship weakest (hit@5 0.500) —
+  the recorded baseline Milestone 4's graph expansion must beat. Negative-query top-1
+  similarity (max 0.492) overlaps answerable top-1 (min 0.379): refusal cannot be a bare score
+  threshold; no threshold was tuned (`DATA_AND_EVALUATION.md`).
+
+**Verification (run 2026-07-13):** `uv run pytest` — 43 passed (prior 32 plus retrieval metric
+math, aggregation incl. negative queries, gold-query loading, store URL/vector-literal
+helpers, blank-env-var config fallback); `uv run ruff check .` — clean; `uv run python scripts/index_pgvector.py` — 111
+documents / 112 chunks confirmed by DB counts; `uv run python scripts/evaluate_retrieval.py` —
+metrics above. Milestone 2 verification (run 2026-07-12): `uv run pytest` — 32 passed (byte-identical same-seed
 regeneration, mention offset integrity, gold-label completeness, retrieval-label chunk
 resolution, query-set balance, failure quarantine, extraction determinism, gold-leakage ban,
 metric regression floors, scoring-math unit checks); `uv run ruff check .` — clean;
@@ -66,20 +89,22 @@ generated data and artifacts correctly gitignored.
 
 **What does NOT exist yet (do not assume otherwise):**
 
-- No cloud services: no Supabase project, no Neo4j AuraDB instance, no Community Cloud app,
-  no live URL.
-- No retrieval or graph code — those subpackages are empty.
-- No retrieval metrics yet (Milestone 3); only extraction metrics exist.
+- No Neo4j AuraDB instance, no graph code (`graph/` is empty), no LangChain orchestration —
+  retrieval is vector-only.
+- No Community Cloud app, no live URL. Supabase is the only cloud service in use.
+- `entity_mentions` table exists but is empty until Milestone 4 loads mention provenance.
 - The Streamlit app is still the foundation health check; no product UI.
 
 ## How To Run
 
 ```bash
 uv sync
-uv run pytest                                    # 32 tests
+uv run pytest                                    # 43 tests
 uv run ruff check .
 uv run python scripts/bootstrap_data.py          # generate corpus + labels (seed 42)
 uv run python scripts/evaluate_extraction.py     # extraction P/R/F1 -> artifacts/
+uv run python scripts/index_pgvector.py          # embed + load Supabase (needs DATABASE_URL)
+uv run python scripts/evaluate_retrieval.py      # retrieval P/R/hit@k -> artifacts/
 uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py
 ```
 
@@ -93,25 +118,29 @@ src/legal_discovery_graph/
 ├── datagen/         # scenario, composer, noise generator, bootstrap orchestration
 ├── ingestion/       # chunker (exact body slices + offsets), pipeline w/ quarantine
 ├── extraction/      # regex + NER lanes, resolution, events (no gold access — enforced)
-├── evaluation/      # strict/relaxed span matching, P/R/F1 scoring
-├── retrieval/ graph/    # empty — later milestones
+├── evaluation/      # extraction span matching + retrieval P/R/hit@k scoring
+├── retrieval/       # embedder, PgVectorStore (Supabase), SemanticRetriever
+├── graph/           # empty — Milestone 4
 └── ui/streamlit_app.py   # health-check app only
-tests/               # 32 tests
-scripts/             # bootstrap_data.py, evaluate_extraction.py (real); other 3 are stubs
+tests/               # 43 tests
+scripts/             # bootstrap_data, evaluate_extraction, index_pgvector,
+                     # evaluate_retrieval (real); load_neo4j, verify_deployment are stubs
 data/                # generated, gitignored; regenerate via bootstrap_data.py
 ```
 
 ## Known Limitations
 
 - Synthetic documents are short and clean; most fit in a single 900-char chunk (112 chunks for
-  111 docs). Chunk granularity may be revisited at the retrieval milestone if needed.
+  111 docs). Retrieval recall at this granularity measured fine (R@10 0.929), so chunking was
+  left unchanged.
 - Extraction metrics on synthetic text will look better than on real-world documents —
   disclosed in `DATA_AND_EVALUATION.md` (ADR-0005).
 
 ## Next Phase
 
-**Milestone 3 — Semantic retrieval (pgvector)** (`roadmap.md`): provision Supabase (requires
-user account action), apply the `DATA_MODEL.md` schema, embed chunks with sentence-transformers,
-implement vector search, index via `scripts/index_pgvector.py`, and score retrieval
-(precision/recall@k, hit rate, refusal behavior on the 4 negative queries). Await approval
-before starting.
+**Milestone 4 — Relationship graph (Neo4j AuraDB)** (`roadmap.md`): provision AuraDB (requires
+user account action), implement `graph/` (constraints, loading with shared IDs, investigation
+Cypher queries), populate via `scripts/load_neo4j.py` (including `entity_mentions` provenance
+in PostgreSQL), add LangChain orchestration combining vector retrieval + graph expansion, and
+measure the graph's contribution against the recorded vector-only baseline (relationship
+hit@5 0.500). Await approval before starting.

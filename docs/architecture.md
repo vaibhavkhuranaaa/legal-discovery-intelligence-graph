@@ -1,8 +1,8 @@
 # Architecture
 
-Target cloud architecture for the deployed system. Foundation milestone status: scaffold and
-health-check app only — components below are **planned** and marked implemented in
-`roadmap.md` as they are verified.
+Target cloud architecture for the deployed system. Milestones 0–3 are implemented: synthetic
+data, extraction, and vector-only pgvector retrieval are verified. Neo4j graph expansion and
+the Streamlit investigation UI remain planned; `roadmap.md` is the current implementation record.
 
 ## System Overview
 
