@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import Engine, create_engine, text
 
-from legal_discovery_graph.models import Chunk, Document
+from legal_discovery_graph.models import Chunk, Document, EntityMention
 
 _SCHEMA_STATEMENTS: tuple[str, ...] = (
     "CREATE EXTENSION IF NOT EXISTS vector",
@@ -177,6 +177,45 @@ class PgVectorStore:
                 for row in rows
             ]
 
+    def replace_entity_mentions(self, mentions: Sequence[EntityMention]) -> None:
+        """Atomically replace mention provenance rows (same rationale as corpus)."""
+        with self._engine.begin() as connection:
+            connection.execute(text("DELETE FROM entity_mentions"))
+            if mentions:
+                connection.execute(
+                    text(
+                        "INSERT INTO entity_mentions (entity_id, chunk_id, document_id,"
+                        " surface_text, start_char, end_char) VALUES (:entity_id, :chunk_id,"
+                        " :document_id, :surface_text, :start_char, :end_char)"
+                    ),
+                    [mention.model_dump() for mention in mentions],
+                )
+
+    def fetch_chunks(self, chunk_ids: Sequence[str]) -> list[RetrievedChunk]:
+        """Hydrate chunks by ID (score 0.0 — no similarity was computed)."""
+        if not chunk_ids:
+            return []
+        with self._engine.connect() as connection:
+            rows = connection.execute(
+                text(
+                    "SELECT chunk_id, document_id, sequence, text, metadata FROM chunks"
+                    " WHERE chunk_id = ANY(:chunk_ids)"
+                ),
+                {"chunk_ids": list(chunk_ids)},
+            ).mappings()
+            by_id = {
+                row["chunk_id"]: RetrievedChunk(
+                    chunk_id=row["chunk_id"],
+                    document_id=row["document_id"],
+                    sequence=row["sequence"],
+                    text=row["text"],
+                    metadata=dict(row["metadata"]),
+                    score=0.0,
+                )
+                for row in rows
+            }
+        return [by_id[chunk_id] for chunk_id in chunk_ids if chunk_id in by_id]
+
     def corpus_counts(self) -> dict[str, int]:
         """Row counts for verification after indexing."""
         with self._engine.connect() as connection:
@@ -185,4 +224,7 @@ class PgVectorStore:
                     text("SELECT count(*) FROM documents")
                 ).scalar_one(),
                 "chunks": connection.execute(text("SELECT count(*) FROM chunks")).scalar_one(),
+                "entity_mentions": connection.execute(
+                    text("SELECT count(*) FROM entity_mentions")
+                ).scalar_one(),
             }

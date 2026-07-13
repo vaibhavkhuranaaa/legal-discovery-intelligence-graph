@@ -1,8 +1,9 @@
 # Data Model
 
 Storage model across the two backends. Source-of-truth Pydantic contracts:
-`src/legal_discovery_graph/models.py`. PostgreSQL + pgvector is provisioned and implemented in
-Milestone 3; the Neo4j graph model remains the design for Milestone 4.
+`src/legal_discovery_graph/models.py`. Both stores are provisioned and implemented:
+PostgreSQL + pgvector in Milestone 3, the Neo4j graph in Milestone 4 (loaded by
+`scripts/load_neo4j.py`; relationship derivations in ADR-0011).
 
 ## Shared Identity Across Systems
 
@@ -12,7 +13,7 @@ into the graph:
 | ID | Minted by | In PostgreSQL | In Neo4j |
 |---|---|---|---|
 | `document_id` (uuid4 hex) | ingestion | `documents.document_id`, `chunks.document_id` | `(:Document {document_id})` |
-| `chunk_id` (uuid4 hex) | ingestion | `chunks.chunk_id` (PK) | `(:Chunk {chunk_id})` (mention provenance) |
+| `chunk_id` (uuid4 hex) | ingestion | `chunks.chunk_id` (PK) | `chunk_id` property on `MENTIONED_IN` edges (mention provenance) |
 | `entity_id` (uuid4 hex) | extraction (post-resolution) | `entity_mentions.entity_id` | `(:Person/:Organization/… {entity_id})` |
 | `event_id` (uuid4 hex) | extraction | `events.event_id` | `(:Event {event_id})` |
 
@@ -46,7 +47,8 @@ CREATE TABLE chunks (
     embedding   VECTOR(384) NOT NULL
 );
 
-CREATE TABLE entity_mentions (            -- provenance for extraction evaluation
+CREATE TABLE entity_mentions (            -- mention provenance (loaded by load_neo4j.py);
+                                          -- start/end are document-body character offsets
     entity_id   TEXT NOT NULL,
     chunk_id    TEXT NOT NULL REFERENCES chunks(chunk_id),
     document_id TEXT NOT NULL REFERENCES documents(document_id),
@@ -70,23 +72,30 @@ Relationship store for investigation queries.
 - `(:Organization {entity_id, name})`
 - `(:Project {entity_id, name})`
 - `(:Location {entity_id, name})`
-- `(:Money {entity_id, amount, currency})`
+- `(:Money {entity_id, name})` — name is the canonical amount surface, e.g. `$45,000`
 - `(:Event {event_id, occurred_at, description})`
 
-**Relationships:**
+DATE entities are deliberately **not** graph nodes: a shared date would edge-connect unrelated
+documents into one hub. Dates stay in Postgres mention provenance for timeline work (ADR-0011).
+
+**Relationships** (all derived from extracted/runtime facts — never from gold labels):
 
 ```
-(:Person)-[:SENT]->(:Document)                 // email author / doc custodian
-(:Person)-[:RECEIVED]->(:Document)
+(:Person)-[:SENT {chunk_id}]->(:Document)      // email From: header / doc custodian
+(:Person)-[:RECEIVED {chunk_id}]->(:Document)  // email To: header
 (:Person|:Organization|:Project|:Location|:Money)-[:MENTIONED_IN {chunk_id}]->(:Document)
-(:Person)-[:AFFILIATED_WITH]->(:Organization)
-(:Event)-[:EVIDENCED_BY]->(:Document)
-(:Event)-[:INVOLVES]->(:Person|:Organization|:Money)
-(:Document)-[:REFERENCES]->(:Document)         // e.g. invoice referenced by email
+(:Event)-[:EVIDENCED_BY {chunk_id}]->(:Document)
+(:Event)-[:INVOLVES {chunk_id}]->(:Person|:Organization|:Project|:Location|:Money)
 ```
 
-`MENTIONED_IN` carries `chunk_id` so every graph edge is traceable to the exact retrievable
-passage that evidences it — the graph never asserts a relationship without provenance.
+Every relationship carries the source `chunk_id` that evidences it. `MENTIONED_IN` records the
+mention itself; correspondence edges point to the parsed header or custodian mention, and event
+edges point to the extracted trigger. The graph never asserts a relationship without provenance.
+
+`AFFILIATED_WITH` and `REFERENCES` from the original design are **not materialized**: no
+extraction lane produces them as facts, and co-mention reasoning happens at query time through
+`MENTIONED_IN` paths (ADR-0011). Header names that don't resolve to an extracted person entity
+are skipped, never guessed.
 
 **Constraints** (created by `scripts/load_neo4j.py`): uniqueness on each label's shared-ID
 property.

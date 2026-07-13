@@ -56,7 +56,7 @@ def main() -> int:
 
     counts = store.corpus_counts()
     print(f"indexed: {counts['documents']} documents, {counts['chunks']} chunks (from database)")
-    if counts != {"documents": len(documents), "chunks": len(chunks)}:
+    if (counts["documents"], counts["chunks"]) != (len(documents), len(chunks)):
         print(f"MISMATCH: expected {len(documents)} documents, {len(chunks)} chunks")
         return 1
 

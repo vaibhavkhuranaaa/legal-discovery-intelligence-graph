@@ -1,8 +1,9 @@
 # Architecture
 
-Target cloud architecture for the deployed system. Milestones 0–3 are implemented: synthetic
-data, extraction, and vector-only pgvector retrieval are verified. Neo4j graph expansion and
-the Streamlit investigation UI remain planned; `roadmap.md` is the current implementation record.
+Target cloud architecture for the deployed system. Milestones 0–4 are implemented: synthetic
+data, extraction, pgvector retrieval, the Neo4j relationship graph, and hybrid vector+graph
+orchestration are verified against live Supabase and AuraDB. The Streamlit investigation UI
+remains planned; `roadmap.md` is the current implementation record.
 
 ## System Overview
 

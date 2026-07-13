@@ -240,3 +240,49 @@ vector-only relationship-query baseline (hit@5 0.500) is the yardstick Milestone
 expansion must beat. Refusal handling is explicitly deferred to the dashboard milestone with
 the evidence that raw top-1 similarity is insufficient. `entity_mentions` is created with the
 schema but stays empty until the graph milestone consumes mention provenance.
+
+---
+
+## ADR-0011: Graph from extracted facts, provenance edges, and rank-interleaved hybrid retrieval
+
+**Context:** Milestone 4 loads a Neo4j AuraDB relationship graph and combines it with pgvector
+retrieval. The decisions that needed making: which relationships may exist, how graph results
+stay evidence-traceable, and how two rankings with different semantics merge.
+
+**Decision:** (a) **Only extracted/runtime facts become edges** — `MENTIONED_IN {chunk_id}`
+from resolved mentions mapped into their containing chunk, `SENT`/`RECEIVED` from parsed email
+`From:`/`To:` header lines (header block only) resolved against extracted person entities plus
+document custodians, and `EVIDENCED_BY`/`INVOLVES` from extracted events. `AFFILIATED_WITH` and
+`REFERENCES` from the original design are **not materialized**: no extraction lane produces
+them as facts, and co-mention reasoning happens at query time through `MENTIONED_IN` paths.
+Unresolvable header names are skipped, never guessed. (b) **DATE entities are not graph
+nodes** — the data model defines no Date label, and a shared date would edge-connect unrelated
+documents into one hub; dates stay in Postgres mention provenance for timeline work.
+(c) **Atomic wipe-and-reload with MERGE batches** — one managed Neo4j write transaction
+(parameterized Cypher; labels from a fixed mapping), mirroring `PgVectorStore.replace_corpus`;
+uniqueness constraints on every label's shared-ID key. (d) **Expansion is evidence-backed:**
+three parameterized queries (co-mention,
+correspondence, event involvement) walk from the seed chunks' entities and return one row per
+(entity, relation, target chunk) — every graph hit carries the `MENTIONED_IN` provenance that
+justifies it. (e) **Fusion is constant-free rank interleaving** — candidates ordered by best
+per-leg rank, vector leg wins ties (pattern V1, G1, V2, G2, …), the graph leg ranked by
+distinct connecting seed entities. Summed Reciprocal Rank Fusion (constant 60) was implemented
+first and **rejected on measurement**: because the graph leg ranks by connectedness to seeds
+rather than relevance to the question, RRF's intersection boost let hub chunks displace correct
+vector top-1 hits (overall hit@1 collapsed 0.607 → 0.143). Interleaving structurally cannot
+displace the vector top-1. (f) **Degraded mode is explicit:** `GraphUnavailableError` is the
+graph boundary's only failure signal; the hybrid result then carries the full vector leg with
+`graph_available=False` and the reason.
+
+**Alternatives considered:** materializing `AFFILIATED_WITH` from co-mention statistics
+(inference presented as fact — rejected); Date nodes (hub topology); LangChain `GraphCypherQA`
+/ LLM-generated Cypher (non-deterministic, needs an LLM key; orchestration here is
+deterministic `RunnableLambda` composition); weighted RRF (weights would be tuned on the same
+32 gold queries).
+
+**Consequences:** Measured at seed 42 (`uv run python scripts/evaluate_retrieval.py`,
+vector-only → graph-expanded): relationship hit@5 0.500 → 0.833, overall hit@5 0.893 → 0.964,
+R@5 0.857 → 0.929, with hit@1 unchanged — no category degraded at any k. Relationship recall
+beyond rank 10 is still bounded by expansion depth (relationship R@10 0.750 in both modes).
+Every graph-derived result in `artifacts/retrieval_results.jsonl` lists the entity, relation,
+and document that justify it.

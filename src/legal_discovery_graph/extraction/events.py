@@ -50,6 +50,7 @@ class ExtractedEvent:
     description: str
     entity_ids: tuple[str, ...]
     trigger: str
+    trigger_start: int
 
 
 def _is_header_paragraph(paragraph: str) -> bool:
@@ -111,6 +112,7 @@ def extract_events(
                 description=description,
                 entity_ids=involved,
                 trigger=match.group(0).lower(),
+                trigger_start=start + match.start(),
             )
         ]
     return []

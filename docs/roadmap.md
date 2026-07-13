@@ -53,14 +53,22 @@ indexed and searched); metrics recorded at seed 42 — macro R@5 0.857 / hit@5 0
 Milestone 4 graph); negative-query top-1 scores overlap answerable ones, so refusal needs more
 than a similarity threshold (`DATA_AND_EVALUATION.md`). 43 tests passing.
 
-## Milestone 4 — Relationship graph (Neo4j AuraDB) ⬜
+## Milestone 4 — Relationship graph (Neo4j AuraDB) ✅
 
-Provision AuraDB; `graph/` implements constraints, loading, and investigation Cypher queries;
-`scripts/load_neo4j.py` populates the graph with shared IDs. LangChain orchestration combining
-vector retrieval + graph expansion; measure graph contribution vs vector-only.
+AuraDB provisioned. `graph/`: `Neo4jGraphStore` driver boundary (idempotent uniqueness
+constraints, wipe-and-reload MERGE batches, parameterized Cypher, three evidence-backed
+expansion queries) and a pure payload builder deriving edges from extracted facts only —
+`MENTIONED_IN {chunk_id}`, `SENT`/`RECEIVED` from email headers + custodians,
+`EVIDENCED_BY`/`INVOLVES` from events (ADR-0011). `scripts/load_neo4j.py` loads AuraDB and
+populates Supabase `entity_mentions` with shared IDs. `retrieval/hybrid.py`: deterministic
+LangChain runnable pipeline (vector leg seeds graph expansion, constant-free rank
+interleaving, explicit degraded mode when Neo4j is down). Evaluation scores vector-only vs
+graph-expanded from the same pass.
 
-Exit criteria: graph queries verified against cloud instance; combined-retrieval evaluation
-recorded.
+Exit criteria met: cloud round-trip verified (186 nodes / 536 relationships in AuraDB, 566
+`entity_mentions` rows in Supabase, counts confirmed from both databases); measured at seed
+42 — relationship hit@5 0.500 → 0.833, overall hit@5 0.893 → 0.964, R@5 0.857 → 0.929, hit@1
+unchanged, no category degraded at any k (`DATA_AND_EVALUATION.md`). 63 tests passing.
 
 ## Milestone 5 — Investigation dashboard ⬜
 

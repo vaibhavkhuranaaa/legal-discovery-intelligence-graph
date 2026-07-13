@@ -1,8 +1,8 @@
 # Data & Evaluation
 
-Data generation (Milestone 1), extraction evaluation (Milestone 2), and vector-only retrieval
-evaluation (Milestone 3) are implemented; graph-expanded retrieval evaluation arrives with
-Milestone 4. Every number below is reproducible from a
+Data generation (Milestone 1), extraction evaluation (Milestone 2), vector-only retrieval
+evaluation (Milestone 3), and graph-expanded retrieval evaluation (Milestone 4) are
+implemented. Every number below is reproducible from a
 committed command and regenerated artifacts — nothing is hand-entered from memory.
 
 ## Synthetic Corpus (implemented)
@@ -135,6 +135,37 @@ Honest findings, kept as-is rather than tuned away:
   or refuse answerable queries. Refusal handling in the dashboard milestone must therefore use
   more than the raw top-1 score (per-query score margins and/or graph corroboration). No
   threshold was tuned on these 32 queries.
+
+#### Measured — Milestone 4, graph-expanded (seed 42, run 2026-07-13)
+
+Same pass and query set as above; the hybrid ranking interleaves the pgvector leg with
+evidence-backed Neo4j expansion (top-5 vector hits seed co-mention / correspondence / event
+traversal; constant-free rank interleaving, vector wins ties — ADR-0011). Both legs are scored
+by `uv run python scripts/evaluate_retrieval.py`; per-query evidence trails are written to
+`artifacts/retrieval_results.jsonl`.
+
+| scope | P@1 | R@1 | hit@1 | R@5 | hit@5 | R@10 | hit@10 |
+|---|---|---|---|---|---|---|---|
+| overall | 0.607 | 0.554 | 0.607 | 0.929 | 0.964 | 0.946 | 0.964 |
+| document | 0.400 | 0.400 | 0.400 | 1.000 | 1.000 | 1.000 | 1.000 |
+| entity | 0.400 | 0.300 | 0.400 | 1.000 | 1.000 | 1.000 | 1.000 |
+| event | 0.857 | 0.857 | 0.857 | 1.000 | 1.000 | 1.000 | 1.000 |
+| financial | 1.000 | 0.900 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| relationship | 0.333 | 0.250 | 0.333 | 0.667 | 0.833 | 0.750 | 0.833 |
+
+The graph's contribution, measured not asserted:
+
+- **Relationship hit@5 0.500 → 0.833** (R@5 0.417 → 0.667) — the multi-hop gap vector
+  similarity could not close is exactly where evidence-backed expansion helps; overall hit@5
+  rises 0.893 → 0.964 and no category degrades at any k. Top-1 metrics are structurally
+  unchanged: interleaving never displaces the vector leg's first hit.
+- **Summed RRF was measured and rejected** (ADR-0011): its intersection boost let
+  graph-connected hub chunks displace correct vector top-1 hits (overall hit@1 0.607 → 0.143
+  in that configuration). The failed measurement is recorded because it motivated the fusion
+  design; only the interleaved configuration ships.
+- Relationship R@10 stays 0.750 in both modes — evidence more than one hop from every seed
+  entity is still out of reach, a known limitation for the dashboard milestone to surface
+  honestly rather than hide.
 
 ### Reporting rules
 

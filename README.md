@@ -2,18 +2,19 @@
 
 **GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
 
-> **Status: in development — Milestones 0–3 of 6 complete.** Foundation, the synthetic corpus
-> generator (deterministic corpus + gold labels), entity/event extraction, and vector-only
-> pgvector retrieval with reproducible evaluation are done; graph expansion, dashboard, and
-> public deployment remain (see [docs/roadmap.md](docs/roadmap.md)).
-> No live URL exists yet — none is claimed.
+> **Status: in development — Milestones 0–4 of 6 complete.** Foundation, the synthetic corpus
+> generator (deterministic corpus + gold labels), entity/event extraction, pgvector retrieval,
+> and the Neo4j relationship graph with hybrid vector+graph retrieval are done — all with
+> reproducible evaluation; the dashboard and public deployment remain (see
+> [docs/roadmap.md](docs/roadmap.md)). No live URL exists yet — none is claimed.
 >
 > **Measured results** (synthetic corpus, seed 42):
 > entity-mention extraction micro **F1 0.889 strict / 0.903 relaxed**; event extraction
-> **F1 1.000**; vector-only retrieval **R@5 0.857 / hit@5 0.893** and **R@10 0.929 / hit@10
-> 0.964**. Reproduce with `bootstrap_data.py`, `evaluate_extraction.py`, `index_pgvector.py`,
-> and `evaluate_retrieval.py`; scores are inflated by clean templated text — see
-> [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md).
+> **F1 1.000**; vector-only retrieval **R@5 0.857 / hit@5 0.893**; graph-expanded retrieval
+> **R@5 0.929 / hit@5 0.964**, lifting relationship-query **hit@5 from 0.500 to 0.833** with
+> no category degraded. Reproduce with `bootstrap_data.py`, `evaluate_extraction.py`,
+> `index_pgvector.py`, `load_neo4j.py`, and `evaluate_retrieval.py`; scores are inflated by
+> clean templated text — see [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md).
 
 A **Graph RAG eDiscovery investigation platform**. Given a corpus of discovery documents
 (emails, contracts, memos, invoices, meeting notes), it extracts entities and events, indexes
@@ -28,11 +29,12 @@ and a case timeline — backed by a reproducible precision/recall/F1 evaluation 
   invoice/account identifiers) with entity resolution across documents.
 - **Semantic retrieval (implemented)** — Hugging Face sentence-transformer embeddings over
   document chunks, stored and queried in Supabase pgvector.
-- **Graph investigation** — Neo4j relationship model (people ↔ organizations ↔ documents ↔
-  events) enabling "who communicated with whom about what, when" expansion around retrieved
-  evidence.
-- **Hybrid Graph RAG orchestration** — LangChain pipeline combining vector retrieval with graph
-  expansion so answers carry both semantic evidence and relationship context.
+- **Graph investigation (implemented)** — Neo4j relationship model (people ↔ organizations ↔
+  documents ↔ events, every edge carrying chunk-level provenance) enabling "who communicated
+  with whom about what, when" expansion around retrieved evidence.
+- **Hybrid Graph RAG orchestration (implemented)** — deterministic LangChain pipeline: vector
+  hits seed graph expansion, results interleave with full evidence trails, and the vector leg
+  keeps working (with an explicit notice) if Neo4j is unavailable.
 - **Timeline analysis** — dated events plotted with Plotly for case chronology.
 - **Reproducible evaluation** — gold-labeled synthetic corpus scored for extraction and
   retrieval precision/recall/F1 (see [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md)).
@@ -70,7 +72,8 @@ uv run ruff check .        # lint
 uv run python scripts/bootstrap_data.py    # generate the synthetic corpus + gold labels
 uv run python scripts/evaluate_extraction.py   # extraction P/R/F1 -> artifacts/
 uv run python scripts/index_pgvector.py        # embed + index Supabase (needs DATABASE_URL)
-uv run python scripts/evaluate_retrieval.py    # retrieval P/R/hit@k -> artifacts/
+uv run python scripts/load_neo4j.py            # extract + load AuraDB graph (needs NEO4J_*)
+uv run python scripts/evaluate_retrieval.py    # vector vs graph-expanded P/R/hit@k -> artifacts/
 uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # health-check app
 ```
 
