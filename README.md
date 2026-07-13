@@ -1,5 +1,7 @@
 # Legal Discovery Intelligence Graph
 
+**GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
+
 > **Status: Foundation in progress.** The repository scaffold, tooling, and architecture are in
 > place; investigation features and the public deployment are being built milestone by milestone
 > (see [docs/roadmap.md](docs/roadmap.md)). No live URL or evaluation metrics exist yet — none
@@ -50,8 +52,8 @@ Requires [uv](https://docs.astral.sh/uv/getting-started/installation/) (no pip, 
 Python installs).
 
 ```bash
-git clone <this-repository>
-cd Legal-Discovery-Operations-Assistant
+git clone https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph.git
+cd legal-discovery-intelligence-graph
 uv sync                    # create .venv and install locked dependencies
 cp .env.example .env       # fill in backend credentials when cloud milestones begin
 
