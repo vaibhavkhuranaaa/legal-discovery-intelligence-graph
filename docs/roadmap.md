@@ -87,10 +87,14 @@ Exit criteria met: all four panels verified locally against live Supabase + Aura
 session run 2026-07-13); no-credential and degraded states covered by headless `AppTest` tests;
 demo script outline drafted in `DEMO_SCRIPT.md` (finalized at Milestone 6). 88 tests passing.
 
-## Milestone 6 — Public deployment ⬜
+## Milestone 6 — Public deployment ✅
 
-Publish GitHub repo, export `requirements.txt` from `uv.lock`, deploy to Streamlit Community
-Cloud, configure secrets, run the full `DEPLOYMENT.md` smoke-test checklist, finish
-`DEMO_SCRIPT.md`, update `README.md` with the verified live URL and reproducible metrics.
+Published from `main` to Streamlit Community Cloud (Python 3.12), with Supabase and AuraDB
+credentials held only in Streamlit Secrets. The live app is
+`https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/`.
+
+Exit criteria met: live startup reports both backends configured; a hybrid retrieval returned
+cited evidence; the entity graph, timeline, and evaluation tabs rendered successfully. The
+initial embedding-model warm-up may take longer than subsequent searches.
 
 Exit criteria: every smoke-test item checked against the live URL; README claims match reality.

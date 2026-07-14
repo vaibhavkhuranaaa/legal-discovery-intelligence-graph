@@ -40,6 +40,8 @@ data/failed/*
 # Vector / model artifacts
 artifacts/*
 !artifacts/.gitkeep
+!artifacts/extraction_metrics.json
+!artifacts/retrieval_metrics.json
 *.faiss
 *.npy
 

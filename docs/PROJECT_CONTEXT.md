@@ -1,7 +1,7 @@
 # Project Context — Read This First In A New Session
 
 Self-contained handoff for the **Legal Discovery Intelligence Graph**. Contains only verified
-current state — no aspirations. Last verified: 2026-07-13 (Milestone 5 completion).
+current state — no aspirations. Last verified: 2026-07-14 (Milestone 6 completion).
 
 ## What This Project Is
 
@@ -15,7 +15,7 @@ on Streamlit Community Cloud at Milestone 6. Full design: `product.md`, `archite
 **Repository:** `github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph` (public).
 CI (GitHub Actions): `uv sync --frozen`, `ruff check`, `pytest` on pushes/PRs to `main`.
 
-## Current Status: Milestones 0–5 complete
+## Current Status: Milestones 0–6 complete
 
 **Milestone 0 — Foundation (done):** uv-managed Python 3.12 project (Hatchling, src layout),
 Ruff/pytest baseline, `config.py` (settings singleton), `models.py` (shared-ID Pydantic
@@ -209,10 +209,10 @@ data/                # generated, gitignored; regenerate via bootstrap_data.py
 - Graph relationships are bounded by extraction quality: unresolved header names produce no
   SENT/RECEIVED edge, and missed entities produce no mention edge.
 
-## Next Phase
+## Deployment
 
-**Milestone 6 — Public deployment** (`roadmap.md`): publish the repo state, export
-`requirements.txt` from `uv.lock`, deploy to Streamlit Community Cloud with secrets configured,
-run the full `DEPLOYMENT.md` smoke-test checklist against the live URL, finish
-`DEMO_SCRIPT.md`, and update `README.md` with the verified live URL. Await approval before
-starting.
+The public dashboard is live at
+`https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/` on
+Streamlit Community Cloud (Python 3.12). Supabase and AuraDB credentials are held only in
+Streamlit Secrets. Live checks on 2026-07-14 confirmed both backend health indicators, hybrid
+retrieval with cited evidence, and the entity graph, timeline, and evaluation views.

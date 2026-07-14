@@ -1,9 +1,9 @@
 # Architecture
 
-Target cloud architecture for the deployed system. Milestones 0–5 are implemented: synthetic
+Target cloud architecture for the deployed system. Milestones 0–6 are implemented: synthetic
 data, extraction, pgvector retrieval, the Neo4j relationship graph, hybrid vector+graph
 orchestration, and the Streamlit investigation dashboard are verified against live Supabase
-and AuraDB. Public deployment (Milestone 6) remains; `roadmap.md` is the current
+and AuraDB. The public dashboard runs on Streamlit Community Cloud; `roadmap.md` is the current
 implementation record.
 
 ## System Overview

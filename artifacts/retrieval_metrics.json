@@ -1,0 +1,318 @@
+{
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "fusion": "rank interleaving (best per-leg rank, vector wins ties); top-5 vector hits seed the graph (ADR-0011)",
+  "graph_expanded": {
+    "answerable_queries": 28,
+    "negative_queries": 4,
+    "overall": {
+      "@1": {
+        "hit_rate": 0.6071,
+        "precision": 0.6071,
+        "recall": 0.5536
+      },
+      "@10": {
+        "hit_rate": 0.9643,
+        "precision": 0.1071,
+        "recall": 0.9464
+      },
+      "@3": {
+        "hit_rate": 0.9286,
+        "precision": 0.3333,
+        "recall": 0.9107
+      },
+      "@5": {
+        "hit_rate": 0.9643,
+        "precision": 0.2071,
+        "recall": 0.9286
+      }
+    },
+    "per_category": {
+      "document": {
+        "@1": {
+          "hit_rate": 0.4,
+          "precision": 0.4,
+          "recall": 0.4
+        },
+        "@10": {
+          "hit_rate": 1.0,
+          "precision": 0.1,
+          "recall": 1.0
+        },
+        "@3": {
+          "hit_rate": 1.0,
+          "precision": 0.3333,
+          "recall": 1.0
+        },
+        "@5": {
+          "hit_rate": 1.0,
+          "precision": 0.2,
+          "recall": 1.0
+        }
+      },
+      "entity": {
+        "@1": {
+          "hit_rate": 0.4,
+          "precision": 0.4,
+          "recall": 0.3
+        },
+        "@10": {
+          "hit_rate": 1.0,
+          "precision": 0.12,
+          "recall": 1.0
+        },
+        "@3": {
+          "hit_rate": 1.0,
+          "precision": 0.4,
+          "recall": 1.0
+        },
+        "@5": {
+          "hit_rate": 1.0,
+          "precision": 0.24,
+          "recall": 1.0
+        }
+      },
+      "event": {
+        "@1": {
+          "hit_rate": 0.8571,
+          "precision": 0.8571,
+          "recall": 0.8571
+        },
+        "@10": {
+          "hit_rate": 1.0,
+          "precision": 0.1,
+          "recall": 1.0
+        },
+        "@3": {
+          "hit_rate": 1.0,
+          "precision": 0.3333,
+          "recall": 1.0
+        },
+        "@5": {
+          "hit_rate": 1.0,
+          "precision": 0.2,
+          "recall": 1.0
+        }
+      },
+      "financial": {
+        "@1": {
+          "hit_rate": 1.0,
+          "precision": 1.0,
+          "recall": 0.9
+        },
+        "@10": {
+          "hit_rate": 1.0,
+          "precision": 0.12,
+          "recall": 1.0
+        },
+        "@3": {
+          "hit_rate": 1.0,
+          "precision": 0.4,
+          "recall": 1.0
+        },
+        "@5": {
+          "hit_rate": 1.0,
+          "precision": 0.24,
+          "recall": 1.0
+        }
+      },
+      "relationship": {
+        "@1": {
+          "hit_rate": 0.3333,
+          "precision": 0.3333,
+          "recall": 0.25
+        },
+        "@10": {
+          "hit_rate": 0.8333,
+          "precision": 0.1,
+          "recall": 0.75
+        },
+        "@3": {
+          "hit_rate": 0.6667,
+          "precision": 0.2222,
+          "recall": 0.5833
+        },
+        "@5": {
+          "hit_rate": 0.8333,
+          "precision": 0.1667,
+          "recall": 0.6667
+        }
+      }
+    },
+    "refusal": {
+      "negative_top1_scores": {
+        "16aa4c0460635bba98959bea381033a0": 1.0,
+        "1e0fcea8964f5026a9f5fffddf606a8a": 1.0,
+        "3662c8e2fe005bec875eb417c5edca77": 1.0,
+        "f1b0e9790f9d5c598bea9b7719359126": 1.0
+      },
+      "note": "Negative queries have empty relevant sets; scores below measure whether a similarity threshold can separate them from answerable queries.",
+      "separation": {
+        "answerable_top1_mean": 1.0,
+        "answerable_top1_min": 1.0,
+        "negative_top1_max": 1.0,
+        "negative_top1_mean": 1.0,
+        "separable": false
+      }
+    }
+  },
+  "note": "Synthetic templated corpus: scores overstate real-world performance (see docs/DATA_AND_EVALUATION.md and ADR-0005). Refusal/separation analysis is meaningful for the vector leg's cosine scores only; fused rank scores are ranking artifacts.",
+  "relationship_hit_at_5": {
+    "graph_expanded": 0.8333,
+    "vector_only": 0.5
+  },
+  "retrieved_per_query": 10,
+  "vector_only": {
+    "answerable_queries": 28,
+    "negative_queries": 4,
+    "overall": {
+      "@1": {
+        "hit_rate": 0.6071,
+        "precision": 0.6071,
+        "recall": 0.5536
+      },
+      "@10": {
+        "hit_rate": 0.9643,
+        "precision": 0.1036,
+        "recall": 0.9286
+      },
+      "@3": {
+        "hit_rate": 0.8929,
+        "precision": 0.3095,
+        "recall": 0.8393
+      },
+      "@5": {
+        "hit_rate": 0.8929,
+        "precision": 0.1929,
+        "recall": 0.8571
+      }
+    },
+    "per_category": {
+      "document": {
+        "@1": {
+          "hit_rate": 0.4,
+          "precision": 0.4,
+          "recall": 0.4
+        },
+        "@10": {
+          "hit_rate": 1.0,
+          "precision": 0.1,
+          "recall": 1.0
+        },
+        "@3": {
+          "hit_rate": 1.0,
+          "precision": 0.3333,
+          "recall": 1.0
+        },
+        "@5": {
+          "hit_rate": 1.0,
+          "precision": 0.2,
+          "recall": 1.0
+        }
+      },
+      "entity": {
+        "@1": {
+          "hit_rate": 0.4,
+          "precision": 0.4,
+          "recall": 0.3
+        },
+        "@10": {
+          "hit_rate": 1.0,
+          "precision": 0.1,
+          "recall": 0.9
+        },
+        "@3": {
+          "hit_rate": 1.0,
+          "precision": 0.3333,
+          "recall": 0.9
+        },
+        "@5": {
+          "hit_rate": 1.0,
+          "precision": 0.2,
+          "recall": 0.9
+        }
+      },
+      "event": {
+        "@1": {
+          "hit_rate": 0.8571,
+          "precision": 0.8571,
+          "recall": 0.8571
+        },
+        "@10": {
+          "hit_rate": 1.0,
+          "precision": 0.1,
+          "recall": 1.0
+        },
+        "@3": {
+          "hit_rate": 1.0,
+          "precision": 0.3333,
+          "recall": 1.0
+        },
+        "@5": {
+          "hit_rate": 1.0,
+          "precision": 0.2,
+          "recall": 1.0
+        }
+      },
+      "financial": {
+        "@1": {
+          "hit_rate": 1.0,
+          "precision": 1.0,
+          "recall": 0.9
+        },
+        "@10": {
+          "hit_rate": 1.0,
+          "precision": 0.12,
+          "recall": 1.0
+        },
+        "@3": {
+          "hit_rate": 1.0,
+          "precision": 0.4,
+          "recall": 1.0
+        },
+        "@5": {
+          "hit_rate": 1.0,
+          "precision": 0.24,
+          "recall": 1.0
+        }
+      },
+      "relationship": {
+        "@1": {
+          "hit_rate": 0.3333,
+          "precision": 0.3333,
+          "recall": 0.25
+        },
+        "@10": {
+          "hit_rate": 0.8333,
+          "precision": 0.1,
+          "recall": 0.75
+        },
+        "@3": {
+          "hit_rate": 0.5,
+          "precision": 0.1667,
+          "recall": 0.3333
+        },
+        "@5": {
+          "hit_rate": 0.5,
+          "precision": 0.1333,
+          "recall": 0.4167
+        }
+      }
+    },
+    "refusal": {
+      "negative_top1_scores": {
+        "16aa4c0460635bba98959bea381033a0": 0.474,
+        "1e0fcea8964f5026a9f5fffddf606a8a": 0.4556,
+        "3662c8e2fe005bec875eb417c5edca77": 0.3114,
+        "f1b0e9790f9d5c598bea9b7719359126": 0.4917
+      },
+      "note": "Negative queries have empty relevant sets; scores below measure whether a similarity threshold can separate them from answerable queries.",
+      "separation": {
+        "answerable_top1_mean": 0.6042,
+        "answerable_top1_min": 0.3787,
+        "negative_top1_max": 0.4917,
+        "negative_top1_mean": 0.4332,
+        "separable": false
+      }
+    }
+  }
+}

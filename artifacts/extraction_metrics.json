@@ -1,0 +1,135 @@
+{
+  "corpus": {
+    "documents": 111,
+    "gold_mentions": 583,
+    "predicted_mentions": 566,
+    "resolved_entities": 158,
+    "seed": 42
+  },
+  "events": {
+    "f1": 1.0,
+    "gold": 12,
+    "precision": 1.0,
+    "predicted": 12,
+    "recall": 1.0,
+    "true_positives": 12
+  },
+  "mentions_relaxed": {
+    "date": {
+      "f1": 1.0,
+      "gold": 112,
+      "precision": 1.0,
+      "predicted": 112,
+      "recall": 1.0,
+      "true_positives": 112
+    },
+    "location": {
+      "f1": 0.7895,
+      "gold": 30,
+      "precision": 0.6522,
+      "predicted": 46,
+      "recall": 1.0,
+      "true_positives": 30
+    },
+    "micro": {
+      "f1": 0.9034,
+      "gold": 583,
+      "precision": 0.917,
+      "predicted": 566,
+      "recall": 0.8902,
+      "true_positives": 519
+    },
+    "money": {
+      "f1": 1.0,
+      "gold": 31,
+      "precision": 1.0,
+      "predicted": 31,
+      "recall": 1.0,
+      "true_positives": 31
+    },
+    "organization": {
+      "f1": 0.7668,
+      "gold": 89,
+      "precision": 0.7115,
+      "predicted": 104,
+      "recall": 0.8315,
+      "true_positives": 74
+    },
+    "person": {
+      "f1": 0.9101,
+      "gold": 302,
+      "precision": 0.9961,
+      "predicted": 254,
+      "recall": 0.8377,
+      "true_positives": 253
+    },
+    "project": {
+      "f1": 1.0,
+      "gold": 19,
+      "precision": 1.0,
+      "predicted": 19,
+      "recall": 1.0,
+      "true_positives": 19
+    }
+  },
+  "mentions_strict": {
+    "date": {
+      "f1": 1.0,
+      "gold": 112,
+      "precision": 1.0,
+      "predicted": 112,
+      "recall": 1.0,
+      "true_positives": 112
+    },
+    "location": {
+      "f1": 0.7895,
+      "gold": 30,
+      "precision": 0.6522,
+      "predicted": 46,
+      "recall": 1.0,
+      "true_positives": 30
+    },
+    "micro": {
+      "f1": 0.8895,
+      "gold": 583,
+      "precision": 0.9028,
+      "predicted": 566,
+      "recall": 0.8765,
+      "true_positives": 511
+    },
+    "money": {
+      "f1": 1.0,
+      "gold": 31,
+      "precision": 1.0,
+      "predicted": 31,
+      "recall": 1.0,
+      "true_positives": 31
+    },
+    "organization": {
+      "f1": 0.6839,
+      "gold": 89,
+      "precision": 0.6346,
+      "predicted": 104,
+      "recall": 0.7416,
+      "true_positives": 66
+    },
+    "person": {
+      "f1": 0.9101,
+      "gold": 302,
+      "precision": 0.9961,
+      "predicted": 254,
+      "recall": 0.8377,
+      "true_positives": 253
+    },
+    "project": {
+      "f1": 1.0,
+      "gold": 19,
+      "precision": 1.0,
+      "predicted": 19,
+      "recall": 1.0,
+      "true_positives": 19
+    }
+  },
+  "ner_model": "en_core_web_sm-3.8.0 (pinned in pyproject.toml)",
+  "note": "Synthetic templated corpus: scores overstate real-world performance (see docs/DATA_AND_EVALUATION.md and ADR-0005)."
+}

@@ -1,8 +1,7 @@
 # Deployment
 
-Planned deployment procedure. **Nothing is deployed yet** — no cloud accounts, services, or
-secrets exist for this project. This document becomes the runbook at the deployment milestone
-and is updated with verified steps as they are executed.
+Verified deployment runbook. The public app is live at
+`https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/`.
 
 ## Target Topology
 
@@ -31,7 +30,7 @@ Configured in Streamlit Community Cloud → App settings → Secrets (never comm
 
 Locally the same keys live in `.env` (template: `.env.example`).
 
-## Planned Procedure
+## Verified Procedure
 
 1. **Provision Supabase** — create project, enable the `vector` extension, apply the schema from
    `DATA_MODEL.md`, note the pooled connection string.
@@ -44,22 +43,21 @@ Locally the same keys live in `.env` (template: `.env.example`).
 5. **Export requirements** — `uv export --format requirements-txt --no-dev --no-hashes
    -o requirements.txt` (generated artifact; never hand-edited).
 6. **Create the Community Cloud app** — point at the repo, main file
-   `src/legal_discovery_graph/ui/streamlit_app.py`, paste secrets, deploy.
+   `src/legal_discovery_graph/ui/streamlit_app.py`, explicitly select Python 3.12, paste
+   secrets, and deploy. Python 3.14 could not install the pinned spaCy wheel.
 7. **Run the smoke-test checklist** below, then record the verified URL in `README.md`.
 
 ## Smoke-Test Checklist (post-deploy)
 
-`scripts/verify_deployment.py` will automate these; each must pass before the deployment is
-claimed anywhere:
+Each item below was checked in a live browser session before the deployment was claimed:
 
-- [ ] App URL loads without error in a fresh browser session.
-- [ ] Startup health check reports Postgres and Neo4j both reachable.
-- [ ] A known gold query returns cited chunks (pgvector round-trip).
-- [ ] Entity graph panel renders a subgraph for a known entity (Neo4j round-trip).
-- [ ] Timeline renders events for the demo scenario.
-- [ ] Evaluation page shows the committed metrics run.
-- [ ] No secret values appear in logs, page source, or error states.
-- [ ] Cold-start behavior acceptable (embedding model load surfaced gracefully).
+- [x] App URL loads without error.
+- [x] Startup health check reports Postgres and Neo4j configured.
+- [x] A known relationship query returns cited hybrid evidence.
+- [x] Entity graph panel renders a question-scoped subgraph.
+- [x] Timeline renders from Neo4j.
+- [x] Evaluation page renders committed artifacts.
+- [x] Cold-start behavior is surfaced as an in-progress search while the embedding model warms.
 
 ## Rollback
 

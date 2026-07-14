@@ -2,11 +2,11 @@
 
 **GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
 
-> **Status: in development — Milestones 0–5 of 6 complete.** Foundation, the synthetic corpus
+> **Status: deployed — Milestones 0–6 complete.** Foundation, the synthetic corpus
 > generator (deterministic corpus + gold labels), entity/event extraction, pgvector retrieval,
 > the Neo4j relationship graph with hybrid vector+graph retrieval, and the Streamlit
 > investigation dashboard are done — all with reproducible evaluation; public deployment
-> remains (see [docs/roadmap.md](docs/roadmap.md)). No live URL exists yet — none is claimed.
+> is live on Streamlit Community Cloud: [open the dashboard](https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/).
 >
 > **Measured results** (synthetic corpus, seed 42):
 > entity-mention extraction micro **F1 0.889 strict / 0.903 relaxed**; event extraction
@@ -90,11 +90,11 @@ timeline, and the evaluation metrics — it does not generate LLM answers. Witho
 backends it renders explicit degraded states (search disabled, timeline notice, "run the
 evaluation command" empty states) rather than empty results.
 
-## Planned Deployment
+## Live Deployment
 
-The application will be deployed publicly: **Streamlit Community Cloud** (app), **Supabase**
-(PostgreSQL + pgvector), and **Neo4j AuraDB** (graph), with secrets managed via Streamlit
-secrets. Procedure and smoke-test checklist: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+The app is deployed on **Streamlit Community Cloud**, backed by Supabase (PostgreSQL +
+pgvector) and Neo4j AuraDB. Credentials are held only in Streamlit Secrets. Deployment details
+and the verified smoke-test record: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 `requirements.txt` is generated from `uv.lock` (`uv export`) solely for Streamlit Community
 Cloud; `pyproject.toml` + `uv.lock` remain the dependency source of truth.
 
