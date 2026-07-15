@@ -1,23 +1,23 @@
 # Project Context — Read This First In A New Session
 
 Self-contained handoff for the **Legal Discovery Intelligence Graph**. Contains only verified
-current state — no aspirations. Last verified: 2026-07-15 (Milestone 7 completion).
+current state — no aspirations. Last verified: 2026-07-15 (Milestone 8 completion).
 
 ## What This Project Is
 
 A Graph RAG eDiscovery investigation platform (portfolio project): synthetic discovery
 documents → entity extraction (spaCy + regex) → pgvector semantic retrieval (Supabase) + Neo4j
-AuraDB relationship graph → LangChain orchestration → Streamlit investigation dashboard with
-cited evidence, entity graph, timeline, and evaluation metrics — intended for public deployment
-on Streamlit Community Cloud at Milestone 6. Full design: `product.md`, `architecture.md`,
+AuraDB relationship graph → LangChain orchestration → a designed Flask investigation web UI
+(cited evidence, entity graph, timeline, evaluation metrics), live on Render, plus the legacy
+Streamlit dashboard on Community Cloud. Full design: `product.md`, `architecture.md`,
 `DATA_MODEL.md`.
 
 **Repository:** `github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph` (public).
 CI (GitHub Actions): `uv sync --frozen`, `ruff check`, `pytest` on pushes/PRs to `main`.
 
-## Current Status: Milestones 0–7 complete
+## Current Status: Milestones 0–8 complete
 
-**Milestone 7 — Flask product web UI (done, not yet deployed):** `webapp/` package (ADR-0013):
+**Milestone 7 — Flask product web UI (done):** `webapp/` package (ADR-0013):
 Flask app factory + blueprint, four server-rendered Jinja pages (Investigate, Entity graph,
 Timeline, Evaluation) over the unchanged `ui/backend.py` → `presenters.py`/`figures.py` core,
 hand-written CSS design system (`static/css/theme.css`), stateless shareable search URLs
@@ -25,8 +25,17 @@ hand-written CSS design system (`static/css/theme.css`), stateless shareable sea
 `webapp/figures.py` recall@k vector-vs-hybrid comparison chart (CVD-validated series pair).
 Caching via `lru_cache` (retriever singleton, search cache, 60s-bucketed timeline). Only new
 dependency: `flask`. Verified 2026-07-15: all four pages against live Supabase + AuraDB;
-110 tests (22 Flask test-client tests incl. every degraded state); ruff clean. The Streamlit
-app remains the deployed UI until Milestone 8.
+110 tests (22 Flask test-client tests incl. every degraded state); ruff clean.
+
+**Milestone 8 — Flask public deployment (done):** Render free tier via committed
+`render.yaml` blueprint: gunicorn (1 worker / 4 threads / 300s timeout), secrets in Render env
+vars, health check `/`. First deploy OOM'd (torch > 512 MB) → fixed with the ONNX embedding
+backend (ADR-0015): `OnnxEmbedder` + `EMBEDDING_BACKEND` setting, cross-backend parity test
+(cosine > 0.9999), live ONNX retrieval evaluation byte-identical to the committed artifact,
+worker RSS 362 MB. Render installs `requirements-render.txt` (locked closure minus
+torch/sentence-transformers/streamlit/spacy) with `pip install --no-deps`. Live at
+`https://legal-discovery-intelligence-graph.onrender.com` — smoke-test checklist passed
+2026-07-15. 113 tests passing.
 
 **Milestone 0 — Foundation (done):** uv-managed Python 3.12 project (Hatchling, src layout),
 Ruff/pytest baseline, `config.py` (settings singleton), `models.py` (shared-ID Pydantic
@@ -168,10 +177,10 @@ generated data and artifacts correctly gitignored.
 
 **What does NOT exist yet (do not assume otherwise):**
 
-- No verified Flask deployment yet: the `webapp/` UI runs locally; Render infrastructure is
-  committed (`render.yaml`, gunicorn, CPU-torch pin — ADR-0014) but the live smoke test is
-  pending. The live URL is still the Streamlit Community Cloud app. Supabase and AuraDB are
-  the only other cloud services in use.
+- Two live deployments exist: the Flask product UI on Render
+  (`https://legal-discovery-intelligence-graph.onrender.com`, ONNX embedding backend,
+  ADR-0014/0015) and the legacy Streamlit dashboard on Community Cloud. Supabase and AuraDB
+  are the only other cloud services in use.
 - No LLM answer generation anywhere — the dashboard displays retrieved, cited evidence only.
 - No refusal threshold in runtime code (ADR-0010); negative questions display their retrieved
   chunks with scores — the UI does not fabricate a refusal.
@@ -180,7 +189,7 @@ generated data and artifacts correctly gitignored.
 
 ```bash
 uv sync
-uv run pytest                                    # 110 tests
+uv run pytest                                    # 113 tests
 uv run ruff check .
 uv run python scripts/bootstrap_data.py          # generate corpus + labels (seed 42)
 uv run python scripts/evaluate_extraction.py     # extraction P/R/F1 -> artifacts/

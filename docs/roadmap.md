@@ -113,8 +113,12 @@ Exit criteria met: all four pages verified locally against live Supabase + AuraD
 degraded/no-credential states covered by 22 Flask test-client tests; 110 tests passing; ruff
 clean.
 
-## Milestone 8 — Flask public deployment 🔄 (infrastructure committed; live verification pending)
+## Milestone 8 — Flask public deployment ✅
 
-Deploy the Flask app behind a production WSGI server (gunicorn) to a free-tier host
-(Render/Railway/Fly.io), secrets via host environment variables, smoke-test checklist against
-the live URL, switch README/live-demo links, then retire the Streamlit Community Cloud app.
+Deployed to Render free tier via committed blueprint (`render.yaml`): gunicorn 1 worker /
+4 threads, secrets in Render env vars, health check on `/`. The first deploy OOM-killed the
+worker (torch > 512 MB), fixed by the ONNX embedding backend (ADR-0015) — same MiniLM vectors
+(parity test cosine > 0.9999; live retrieval evaluation byte-identical), worker RSS 362 MB.
+Live at `https://legal-discovery-intelligence-graph.onrender.com`, smoke-test checklist passed
+2026-07-15; README links updated. The Streamlit Community Cloud app remains up as the legacy
+dashboard. 113 tests passing.

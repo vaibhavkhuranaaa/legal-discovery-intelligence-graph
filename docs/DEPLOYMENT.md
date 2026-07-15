@@ -8,7 +8,14 @@ Verified deployment runbook. The public app is live at
 > see "Flask UI on Render" below. The Streamlit app stays live until the Flask smoke test
 > passes. The remainder of this section documents the verified Streamlit deployment.
 
-## Flask UI on Render (Milestone 8 — prepared, not yet verified)
+## Flask UI on Render (Milestone 8 — verified live)
+
+**Live URL:** `https://legal-discovery-intelligence-graph.onrender.com` — smoke-tested
+2026-07-15: all four pages 200, a known relationship query returned 5 cited hybrid evidence
+chunks (2 graph-contributed), entity graph and timeline rendered from live backends,
+evaluation tiles/chart rendered from committed artifacts, plotly.js served locally, repeat
+search 0.2s. Free-tier caveat: the instance sleeps when idle; the first request after a wake
+is slow (build cache is ephemeral, the embedding model re-downloads).
 
 Infrastructure is committed as `render.yaml` (ADR-0014): free web service, gunicorn
 (`--workers 1 --threads 4 --timeout 300`) serving `legal_discovery_graph.webapp:create_app()`,

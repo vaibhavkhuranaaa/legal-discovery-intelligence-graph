@@ -2,11 +2,14 @@
 
 **GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
 
-> **Status: deployed — Milestones 0–6 complete.** Foundation, the synthetic corpus
+> **Status: deployed — Milestones 0–8 complete.** Foundation, the synthetic corpus
 > generator (deterministic corpus + gold labels), entity/event extraction, pgvector retrieval,
-> the Neo4j relationship graph with hybrid vector+graph retrieval, and the Streamlit
-> investigation dashboard are done — all with reproducible evaluation; public deployment
-> is live on Streamlit Community Cloud: [open the dashboard](https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/).
+> the Neo4j relationship graph with hybrid vector+graph retrieval, and the designed Flask
+> investigation UI are done — all with reproducible evaluation. **Live demo:**
+> [legal-discovery-intelligence-graph.onrender.com](https://legal-discovery-intelligence-graph.onrender.com)
+> (Render free tier — the instance sleeps when idle, so the first page load and first search
+> may take a minute). The earlier Streamlit dashboard also remains available
+> [on Community Cloud](https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/).
 >
 > **Measured results** (synthetic corpus, seed 42):
 > entity-mention extraction micro **F1 0.889 strict / 0.903 relaxed**; event extraction
@@ -77,7 +80,8 @@ uv run python scripts/evaluate_extraction.py   # extraction P/R/F1 -> artifacts/
 uv run python scripts/index_pgvector.py        # embed + index Supabase (needs DATABASE_URL)
 uv run python scripts/load_neo4j.py            # extract + load AuraDB graph (needs NEO4J_*)
 uv run python scripts/evaluate_retrieval.py    # vector vs graph-expanded P/R/hit@k -> artifacts/
-uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # investigation dashboard
+uv run flask --app legal_discovery_graph.webapp run                  # product web UI
+uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # legacy dashboard
 ```
 
 `bootstrap_data.py` deterministically generates the fictional "Project Falcon" investigation
@@ -92,11 +96,13 @@ evaluation command" empty states) rather than empty results.
 
 ## Live Deployment
 
-The app is deployed on **Streamlit Community Cloud**, backed by Supabase (PostgreSQL +
-pgvector) and Neo4j AuraDB. Credentials are held only in Streamlit Secrets. Deployment details
-and the verified smoke-test record: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
-`requirements.txt` is generated from `uv.lock` (`uv export`) solely for Streamlit Community
-Cloud; `pyproject.toml` + `uv.lock` remain the dependency source of truth.
+The Flask product UI is deployed on **Render** (free tier, gunicorn, ONNX embedding backend —
+ADR-0014/0015), backed by Supabase (PostgreSQL + pgvector) and Neo4j AuraDB; secrets live only
+in Render environment variables. The earlier Streamlit dashboard remains on **Streamlit
+Community Cloud**. Deployment details and the verified smoke-test records:
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). `requirements.txt` (Streamlit Cloud) and
+`requirements-render.txt` (Render, torch-free) are both generated from `uv.lock` via
+`uv export`; `pyproject.toml` + `uv.lock` remain the dependency source of truth.
 
 ## Security & Data Disclaimer
 
