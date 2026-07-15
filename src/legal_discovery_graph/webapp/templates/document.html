@@ -8,7 +8,7 @@
 {% elif not_found %}
   <div class="notice warn">
     No document with this identifier exists in the indexed corpus. The corpus
-    may have been regenerated since this link was made — re-run the search from
+    may have been regenerated since this link was made. Re-run the search from
     the <a href="{{ url_for('webapp.investigate') }}">Investigate</a> page.
   </div>
 {% else %}
@@ -16,7 +16,7 @@
     <p class="eyebrow">Source document</p>
     <h1>{{ doc.title }}</h1>
     <p class="lede">
-      The full stored document behind a citation — every retrieved passage can
+      The full stored document behind a citation. Every retrieved passage can
       be read here in context.
     </p>
   </div>
@@ -57,7 +57,7 @@
   {% endfor %}
 
   <div class="notice spaced">
-    This document is synthetic — generated deterministically by
+    This document is synthetic, generated deterministically by
     <code>scripts/bootstrap_data.py</code>; all names, amounts, and identifiers
     are fictional. See <a href="{{ url_for('webapp.case') }}">the case brief</a>
     for how the corpus is built and verified.

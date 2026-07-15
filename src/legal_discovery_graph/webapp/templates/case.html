@@ -6,7 +6,7 @@
   <h1>The Project Falcon matter</h1>
   <p class="lede">
     An eDiscovery investigation is a story decoded from documents. This site is
-    a live, working decode of one fictional matter — every answer below is a
+    a live, working decode of one fictional matter. Every answer below is a
     retrieved, cited passage from the corpus, never generated text.
   </p>
 </div>
@@ -16,29 +16,28 @@
   <p>
     <strong>Meridian Aerospace Systems</strong> funds <strong>Project
     Falcon</strong>, an avionics upgrade program, and puts the work out to
-    sealed bid as RFP-2023-011. The contract is awarded to <strong>Northgate
-    Supply Solutions</strong> — over a lower-priced competitor. Months later,
+    sealed bid as RFP-2023-011. The contract goes to <strong>Northgate
+    Supply Solutions</strong> over a lower-priced competitor. Months later,
     accounts payable notices Northgate's invoices climbing, the CFO demands an
     explanation, and Internal Audit opens engagement IA-2023-19. What the
     documents reveal from there is the story this corpus holds.
   </p>
   <p>
-    The discovery production is <strong>455 synthetic documents</strong> — 276
+    The discovery production is <strong>455 synthetic documents</strong>: 276
     emails, 71 invoices, 68 memos, 39 meeting notes, and 1 contract. 39 of them
     are planted evidence that carries the fact pattern; the other 416 are
-    realistic corporate noise the evidence must be found in. Everything —
-    people, companies, amounts, email domains, even the planted Social Security
-    and account numbers — is fictional and deliberately invalid, generated
-    deterministically from a fixed seed so the entire corpus and every metric
-    can be reproduced byte-for-byte.
+    realistic corporate noise the evidence must be found in. Every person,
+    company, amount, email domain, and identifier is fictional, and the corpus
+    is generated deterministically from a fixed seed, so the whole production
+    and every published metric can be reproduced byte for byte.
   </p>
 </div>
 
 <div class="panel">
-  <h2>Decode it — a guided tour</h2>
+  <h2>Decode it: a guided tour</h2>
   <p class="h2-note">
-    Six questions, in the order an investigator might ask them. Each one is a
-    real search against the live backends — click through, read the cited
+    Six questions, in the order an investigator might ask them. Each one runs a
+    real search against the live backends. Click through, read the cited
     passages, and follow any citation to its full source document.
   </p>
   <ol class="tour">
@@ -56,14 +55,14 @@
     <a href="{{ url_for('webapp.graph', q='What is the relationship between Daniel Reyes and Crestline Holdings?') }}">entity graph</a>
     shows who connects to whom, and the
     <a href="{{ url_for('webapp.audit') }}">audit trail</a> records every search
-    run here — including yours.
+    run here, including yours.
   </p>
 </div>
 
 <div class="panel">
   <h2>How to read the evidence</h2>
   <p class="h2-note">
-    What every badge and score on an evidence card means.
+    What every badge, score, and flag on an evidence card means, by category.
   </p>
   {% include "_glossary.html" %}
 </div>
@@ -71,29 +70,29 @@
 <div class="panel">
   <h2>How to verify the output</h2>
   <p>
-    Nothing here asks to be taken on faith:
+    Nothing on this site needs to be taken on trust:
   </p>
   <ul class="verify-list">
     <li>
       <strong>Every passage links to its source.</strong> The citation under
       each evidence card opens the full stored document, so a passage can
-      always be read in context — the same chain a real production would need.
+      always be read in context. That is the same chain a real production
+      would need.
     </li>
     <li>
       <strong>Every metric comes from a committed artifact.</strong> The
       <a href="{{ url_for('webapp.evaluation') }}">Evaluation page</a> renders
-      the JSON artifacts checked into
+      the JSON files checked into
       <a href="https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph/tree/main/artifacts">the repository</a>,
-      produced by evaluation scripts scoring against gold labels — including
-      the honest negative finding that graph expansion currently hurts
+      produced by evaluation scripts that score against gold labels. That
+      includes the unfavorable finding that graph expansion currently lowers
       whole-corpus recall at depth 10.
     </li>
     <li>
-      <strong>Everything regenerates from source.</strong> The corpus, gold
-      labels, and every score reproduce from the repository:
-      <code>bootstrap_data.py</code> regenerates the identical corpus, and the
-      <code>evaluate_*.py</code> scripts recompute each artifact. Method and
-      caveats:
+      <strong>Everything regenerates from source.</strong>
+      <code>bootstrap_data.py</code> rebuilds the identical corpus and gold
+      labels, and the <code>evaluate_*.py</code> scripts recompute each
+      artifact. Method and caveats:
       <a href="https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph/blob/main/docs/DATA_AND_EVALUATION.md">docs/DATA_AND_EVALUATION.md</a>.
     </li>
   </ul>
@@ -101,7 +100,7 @@
 
 <div class="panel">
   <details class="spoiler">
-    <summary>The full story — spoiler, if you'd rather not decode it yourself</summary>
+    <summary>The full story, if you would rather not decode it yourself</summary>
     <p>
       Daniel Reyes, Meridian's Director of Procurement, steers the Project
       Falcon award to Northgate Supply Solutions after private meetings with
@@ -109,7 +108,7 @@
       company systems. Northgate's bid loses on price to Apex Components but
       wins anyway, justified on "schedule risk and vendor responsiveness" in an
       award determination made solely by Reyes. In return, Northgate routes
-      quarterly payments through <strong>Crestline Holdings LLC</strong> — a
+      quarterly payments through <strong>Crestline Holdings LLC</strong>, a
       shell company whose registered-agent address matches a property
       associated with Reyes.
     </p>
@@ -117,13 +116,13 @@
       The scheme surfaces through the paperwork: Northgate's monthly invoice
       amounts escalate, Elena Vasquez in accounts payable flags the pattern,
       and CFO Marcus Webb demands answers. Internal Audit opens engagement
-      IA-2023-19 and finds invoice INV-1051 was paid twice and the RFP
-      evaluation file is missing its scoresheets. Meridian issues a litigation
-      hold, engages outside counsel Hartwell &amp; Pace LLP, and places Reyes
-      on paid administrative leave. The corpus ends there — deliberately. What
-      outside counsel concluded, and whether charges were ever filed, is not
-      in these documents, which is exactly what the refusal step of the tour
-      demonstrates.
+      IA-2023-19 and finds that invoice INV-1051 was paid twice and that the
+      RFP evaluation file is missing its scoresheets. Meridian issues a
+      litigation hold, engages outside counsel Hartwell &amp; Pace LLP, and
+      places Reyes on paid administrative leave. The corpus ends there, by
+      design. What outside counsel concluded, and whether charges were ever
+      filed, is not in these documents, which is exactly what the refusal step
+      of the tour demonstrates.
     </p>
     <p class="h2-note">
       The full chronology, with a citation for every event, is on the

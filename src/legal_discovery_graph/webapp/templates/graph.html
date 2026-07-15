@@ -31,13 +31,13 @@
 
 {% if search_error %}
   <div class="notice error spaced">
-    Investigation search failed — no evidence could be retrieved.
+    Investigation search failed and no evidence could be retrieved.
     Details: {{ search_error }}
   </div>
 {% elif searched %}
   {% if graph_error %}
     <div class="notice warn spaced">
-      Graph expansion is unavailable — showing vector evidence only.
+      Graph expansion is unavailable, so only vector evidence is shown.
       Reason: {{ graph_error }}
     </div>
   {% endif %}
@@ -102,7 +102,7 @@
           const tgt = cy.getElementById(d.target).data("label");
           detail.hidden = false;
           detail.innerHTML =
-            "<strong>" + src + "</strong> — " + d.relation + " — <strong>" + tgt +
+            "<strong>" + src + "</strong> · " + d.relation + " · <strong>" + tgt +
             "</strong><br><span class='mono-note'>stored, evidence-backed relation" +
             " from the graph</span>";
         });
@@ -110,7 +110,7 @@
           const d = evt.target.data();
           detail.hidden = false;
           detail.innerHTML =
-            "<strong>" + d.label + "</strong> (" + d.kind + ") — " + d.degree +
+            "<strong>" + d.label + "</strong> (" + d.kind + ") · " + d.degree +
             " evidence-backed relation" + (d.degree === 1 ? "" : "s");
         });
         cy.on("tap", (evt) => { if (evt.target === cy) detail.hidden = true; });
@@ -118,13 +118,13 @@
     </div>
   {% else %}
     <div class="notice spaced">
-      No graph relationships were found for this question's evidence —
+      No graph relationships were found for this question's evidence.
       nothing is drawn that the graph does not back.
     </div>
   {% endif %}
 {% elif status.database_configured %}
   <div class="notice spaced">
-    Enter an investigative question above — or run one on the
+    Enter an investigative question above, or run one on the
     <a href="{{ url_for('webapp.investigate') }}">Investigate</a> page and
     follow its graph link. The graph shows the evidence behind the results.
   </div>

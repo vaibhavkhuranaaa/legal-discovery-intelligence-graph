@@ -5,8 +5,8 @@
   <p class="eyebrow">Extracted events</p>
   <h1>Timeline</h1>
   <p class="lede">
-    Chronology of events extracted from the corpus and loaded into the graph —
-    each event cites the document that evidences it.
+    Chronology of events extracted from the corpus and loaded into the graph.
+    Each event cites the document that evidences it.
   </p>
 </div>
 
@@ -17,7 +17,7 @@
   </div>
 {% elif not records %}
   <div class="notice">
-    No events are loaded in the graph — run
+    No events are loaded in the graph. Run
     <code>uv run python scripts/load_neo4j.py</code> to extract and load the corpus.
   </div>
 {% else %}
@@ -51,7 +51,7 @@
   </div>
 
   <details class="table-fallback">
-    <summary>Table view — every event with its citation</summary>
+    <summary>Table view: every event with its citation</summary>
     <div class="table-scroll">
       <table class="data-table">
         <thead>

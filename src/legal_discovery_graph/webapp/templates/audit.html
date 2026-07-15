@@ -5,7 +5,7 @@
   <p class="eyebrow">Defensibility</p>
   <h1>Audit trail</h1>
   <p class="lede">
-    Every investigation search is recorded — what was asked, when, how many
+    Every investigation search is recorded: what was asked, when, how many
     passages were returned, and whether the calibrated evidence threshold
     refused the question. Rows are append-only in PostgreSQL.
   </p>
@@ -17,7 +17,7 @@
   </div>
 {% elif not rows %}
   <div class="notice">
-    No searches have been recorded yet — run an investigation on the
+    No searches have been recorded yet. Run an investigation on the
     <a href="{{ url_for('webapp.investigate') }}">Investigate</a> page.
   </div>
 {% else %}

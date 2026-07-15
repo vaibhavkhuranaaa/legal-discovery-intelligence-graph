@@ -1,63 +1,91 @@
-<dl class="glossary">
-  <div class="glossary-item">
-    <dt><span class="source-pill vector">vector</span></dt>
-    <dd>
-      This passage was found by semantic search: the question and every stored
-      passage are embedded as vectors, and the closest passages by cosine
-      similarity are returned — matching meaning, not keywords.
-    </dd>
+<div class="glossary">
+  <h3 class="glossary-cat">Where a passage came from</h3>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Badge</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="source-pill vector">vector</span></td>
+          <td>Found by meaning-based search. The question and every stored
+            passage are compared by cosine similarity, so passages match on
+            what they say, not on shared keywords.</td>
+        </tr>
+        <tr>
+          <td><span class="source-pill graph">graph</span></td>
+          <td>Reached through the relationship graph. People, organizations,
+            and projects named in the first matches were followed along their
+            stored relationships to documents the search alone missed. The
+            card's evidence trail lists the exact relations that led there.</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
-  <div class="glossary-item">
-    <dt><span class="source-pill graph">graph</span></dt>
-    <dd>
-      This passage was reached through the Neo4j entity graph: entities in the
-      vector hits (people, organizations, projects) were expanded along their
-      stored relationships to documents the semantic search alone missed. Its
-      graph evidence trail lists the exact relations that led here.
-    </dd>
+
+  <h3 class="glossary-cat">Scores</h3>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Score</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>cosine</td>
+          <td>How close the passage is to the question in meaning, from 0 to 1.
+            When the best match scores below the calibrated threshold of 0.509,
+            the corpus most likely does not answer the question and the app
+            says so instead of showing weak matches. The threshold was measured
+            on the gold query set; see the Evaluation page.</td>
+        </tr>
+        <tr>
+          <td>fused rank score</td>
+          <td>The ordering score used to merge vector and graph results into
+            one ranked list. It only compares passages against each other and
+            means nothing on its own. Evidence strength is the cosine score
+            plus the trail.</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
-  <div class="glossary-item">
-    <dt>cosine</dt>
-    <dd>
-      Semantic closeness between the question and the passage, from 0 to 1
-      (1 = identical meaning). When the best match falls below the calibrated
-      threshold of 0.509, the app refuses to present evidence — the corpus
-      likely does not answer the question (measured on the gold query set; see
-      Evaluation).
-    </dd>
+
+  <h3 class="glossary-cat">Review flags</h3>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Flag</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="flag-pill priv">potentially privileged</span></td>
+          <td>The text carries privilege markers, such as the phrase
+            "attorney-client privileged" or correspondence with an
+            outside-counsel email address. This is an aid for privilege review,
+            not a legal determination, and nothing is withheld.</td>
+        </tr>
+        <tr>
+          <td><span class="flag-pill pii">PII</span></td>
+          <td>The passage matches personal-data patterns: Social Security,
+            bank account, or routing numbers. Every such value in this
+            synthetic corpus is deliberately invalid.</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
-  <div class="glossary-item">
-    <dt>fused rank score</dt>
-    <dd>
-      The ordering score when vector and graph results are interleaved into one
-      ranked list. It ranks passages against each other and means nothing in
-      isolation — evidence strength is the cosine score plus the trail.
-    </dd>
+
+  <h3 class="glossary-cat">Results and citations</h3>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>passage</td>
+          <td>The unit of retrieval: a contiguous span of a source document.
+            The citation under each card links to the full document so any
+            passage can be read in context.</td>
+        </tr>
+        <tr>
+          <td>no supporting evidence</td>
+          <td>The refusal state. The best match fell below the calibrated
+            cosine threshold, so the app reports that the corpus does not
+            support the question rather than presenting weak matches. A link
+            is offered to view the below-threshold matches anyway.</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
-  <div class="glossary-item">
-    <dt><span class="flag-pill priv">potentially privileged</span></dt>
-    <dd>
-      Rule-based markers were detected — privilege phrases (e.g.
-      “attorney-client privileged”) or correspondence with an
-      outside-counsel email domain. This is a review aid that flags documents
-      for a privilege review; it is not a legal determination, and nothing is
-      withheld.
-    </dd>
-  </div>
-  <div class="glossary-item">
-    <dt><span class="flag-pill pii">PII</span></dt>
-    <dd>
-      The passage matches personal-data patterns: Social Security, bank
-      account, or routing numbers. In this synthetic corpus every such value is
-      deliberately invalid (e.g. an SSN area number that is never issued).
-    </dd>
-  </div>
-  <div class="glossary-item">
-    <dt>passage</dt>
-    <dd>
-      The unit of retrieval: a contiguous span of a source document. The
-      citation under each card links to the full document so every passage can
-      be read in context.
-    </dd>
-  </div>
-</dl>
+</div>

@@ -5,8 +5,8 @@
   <p class="eyebrow">Hybrid Graph RAG</p>
   <h1>Investigate</h1>
   <p class="lede">
-    Ask an investigative question and review retrieved, cited evidence —
-    semantic search over the corpus, expanded through the entity graph.
+    Ask an investigative question and review retrieved, cited evidence:
+    meaning-based search over the corpus, expanded through the entity graph.
     Every passage shown is backed by a stored document; nothing is generated.
   </p>
 </div>
@@ -15,8 +15,8 @@
   {% if not status.database_configured %}
     <div class="notice error">
       Semantic search requires PostgreSQL + pgvector. Set
-      <code>DATABASE_URL</code> (see <code>.env.example</code>) and restart —
-      searching is disabled until then.
+      <code>DATABASE_URL</code> (see <code>.env.example</code>) and restart.
+      Searching is disabled until then.
     </div>
   {% else %}
     <form class="search-form" method="get" action="{{ url_for('webapp.investigate') }}">
@@ -40,7 +40,7 @@
 
 {% if search_error %}
   <div class="notice error spaced">
-    Investigation search failed — no evidence could be retrieved.
+    Investigation search failed and no evidence could be retrieved.
     Details: {{ search_error }}
   </div>
 {% elif refused %}
@@ -52,7 +52,7 @@
       <span class="mono-note">{{ '%.3f' | format(refused.top) }}</span>, below the
       calibrated evidence threshold of
       <span class="mono-note">{{ '%.3f' | format(refused.threshold) }}</span>
-      (measured on the gold query set — see
+      (measured on the gold query set; see
       <a href="{{ url_for('webapp.evaluation') }}">Evaluation</a>).
     </p>
     <p>
@@ -63,20 +63,20 @@
 {% elif searched %}
   {% if below_threshold %}
     <div class="notice warn spaced">
-      These matches score below the calibrated evidence threshold — treat them
+      These matches score below the calibrated evidence threshold. Treat them
       as leads, not support.
     </div>
   {% endif %}
   {% if graph_error %}
     <div class="notice warn spaced">
-      Graph expansion is unavailable — showing vector evidence only.
+      Graph expansion is unavailable, so only vector evidence is shown.
       Reason: {{ graph_error }}
     </div>
   {% endif %}
   {% if not rows %}
     <div class="notice spaced">
       No evidence was retrieved for this question. The corpus may not be
-      indexed yet — run <code>uv run python scripts/index_pgvector.py</code>.
+      indexed yet. Run <code>uv run python scripts/index_pgvector.py</code>.
     </div>
   {% else %}
     <p class="results-caption">
@@ -85,7 +85,7 @@
       <a href="{{ url_for('webapp.graph', q=question, limit=limit) }}">view entity graph →</a>
     </p>
     <details class="trail glossary-panel">
-      <summary>How to read this evidence — badges, scores, and flags</summary>
+      <summary>How to read this evidence: badges, scores, and flags</summary>
       {% include "_glossary.html" %}
     </details>
     {% for row, flags in rows %}
@@ -107,9 +107,9 @@
             {% endif %}
             {% for source in row.sources %}
               <span class="source-pill {{ source }}"
-                    title="{{ 'found by semantic (cosine-similarity) search'
+                    title="{{ 'found by meaning-based search (cosine similarity)'
                               if source == 'vector' else
-                              'reached by expanding entity relationships in the Neo4j graph' }}"
+                              'reached by following entity relationships in the graph' }}"
                     >{{ source }}</span>
             {% endfor %}
           </div>
@@ -117,14 +117,14 @@
         <div class="evidence-scores">
           {% if row.similarity is not none %}
             <span class="score"
-                  title="semantic closeness of question and passage, 0–1 (1 = identical meaning)">
+                  title="closeness in meaning between question and passage, 0 to 1 (1 = identical)">
               cosine {{ '%.3f' | format(row.similarity) }}
               <span class="meter"><span class="meter-fill"
                 style="width: {{ (row.similarity * 100) | round(1) }}%"></span></span>
             </span>
           {% endif %}
           <span class="score"
-                title="ordering score for interleaving vector and graph results — comparative only">
+                title="ordering score for merging vector and graph results; comparative only">
             fused rank score {{ '%.3f' | format(row.fused_score) }}</span>
         </div>
         <p class="evidence-text">{{ row.text }}</p>
@@ -134,8 +134,8 @@
             <ul>
               {% for item in row.evidence %}
                 <li>
-                  <strong>{{ item.entity_name }}</strong> —
-                  <code>{{ item.relation }}</code> —
+                  <strong>{{ item.entity_name }}</strong> ·
+                  <code>{{ item.relation }}</code> ·
                   <a href="{{ url_for('webapp.document', document_id=row.document_id) }}">this document</a>
                 </li>
               {% endfor %}

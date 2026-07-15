@@ -74,15 +74,15 @@ TOUR_STEPS: tuple[dict, ...] = (
         "question": "Who approved the award of the Project Falcon contract?",
         "note": (
             "Start where the money went. The award determination surfaces as a "
-            "semantic match — each passage shows a vector badge and its cosine "
-            "similarity score."
+            "direct match, and each passage shows a vector badge with its "
+            "cosine similarity score."
         ),
     },
     {
         "question": "What is the relationship between Daniel Reyes and Crestline Holdings?",
         "note": (
-            "A relationship question. Passages with a graph badge were reached by "
-            "expanding entity relationships in Neo4j — open a card's graph "
+            "A relationship question. Passages with a graph badge were reached "
+            "by following entity relationships in the graph. Open a card's "
             "evidence trail to see the stored relations that connected it."
         ),
     },
@@ -97,8 +97,8 @@ TOUR_STEPS: tuple[dict, ...] = (
         "question": "When did the internal audit of Project Falcon procurement begin?",
         "note": (
             "The unraveling. Audit and outside-counsel material carries a "
-            "“potentially privileged” badge — rule-based markers, "
-            "flagged for review, never withheld."
+            "\"potentially privileged\" badge: rule-based markers, flagged for "
+            "review, never withheld."
         ),
     },
     {
@@ -111,9 +111,9 @@ TOUR_STEPS: tuple[dict, ...] = (
     {
         "question": "What criminal charges were filed against Daniel Reyes?",
         "note": (
-            "A trick question — the corpus contains no charging documents. "
-            "Instead of presenting weak matches as support, the app refuses: "
-            "“no supporting evidence found.”"
+            "A trick question: the corpus contains no charging documents. "
+            "Instead of presenting weak matches as support, the app answers "
+            "that no supporting evidence was found."
         ),
     },
 )

@@ -1012,3 +1012,18 @@ footer .mono {
 .rail-cite a:hover {
   color: var(--brass);
 }
+
+.glossary-cat {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--navy);
+  margin: 0.4rem 0 0.1rem;
+}
+
+.glossary .data-table td:first-child {
+  white-space: nowrap;
+}
+
+.glossary .data-table td {
+  vertical-align: top;
+}

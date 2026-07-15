@@ -30,7 +30,7 @@
   <h1>Evaluation</h1>
   <p class="lede">
     Measured against gold labels on the synthetic corpus and loaded from
-    committed artifacts — never hand-written. Reproduce with
+    committed artifacts, never hand-written. Reproduce with
     <code>evaluate_extraction.py</code> and <code>evaluate_retrieval.py</code>.
   </p>
 </div>
@@ -40,7 +40,7 @@
     <div class="score-hero">
       <span class="score-value">{{ '%.3f' | format(score.total) }}</span>
       <span class="score-label">Total model score</span>
-      <span class="score-formula">{{ score.FORMULA }} — equal weights, no tuning</span>
+      <span class="score-formula">{{ score.FORMULA }} · equal weights, no tuning</span>
     </div>
     <div class="stat-grid score-components">
       <div class="stat">
@@ -94,7 +94,7 @@
     {% if refusal %}
       <h3 class="table-title">Refusal calibration</h3>
       <p class="results-caption tight">
-        {{ refusal.rule }} — threshold
+        {{ refusal.rule }} · threshold
         <span class="mono-note">{{ '%.4f' | format(refusal.threshold) }}</span> ·
         {{ refusal.negatives_refused }}/{{ refusal.negatives_total }} negative queries
         refused · {{ refusal.false_refusals }}/{{ refusal.answerable_total }} false
