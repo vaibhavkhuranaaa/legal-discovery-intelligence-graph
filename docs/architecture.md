@@ -1,10 +1,11 @@
 # Architecture
 
-Target cloud architecture for the deployed system. Milestones 0–6 are implemented: synthetic
+Target cloud architecture for the deployed system. Milestones 0–7 are implemented: synthetic
 data, extraction, pgvector retrieval, the Neo4j relationship graph, hybrid vector+graph
-orchestration, and the Streamlit investigation dashboard are verified against live Supabase
-and AuraDB. The public dashboard runs on Streamlit Community Cloud; `roadmap.md` is the current
-implementation record.
+orchestration, the Streamlit investigation dashboard, and the Flask product web UI are verified
+against live Supabase and AuraDB. The public dashboard currently runs on Streamlit Community
+Cloud; the Flask app (`webapp/`, ADR-0013) replaces it as the product UI once it has its own
+public deployment (Milestone 8). `roadmap.md` is the current implementation record.
 
 ## System Overview
 
@@ -28,7 +29,9 @@ Retrieval orchestration (src/.../retrieval, LangChain)
    graph expansion from Neo4j  ─┴─► evidence bundle (chunks + subgraph + events)
         │
         ▼
-Streamlit dashboard (src/.../ui, Streamlit Community Cloud)
+Presentation (two UIs over one core: ui/backend + presenters + figures)
+   Flask web app (src/.../webapp — product UI; Jinja + hand-written CSS, ADR-0013)
+   Streamlit dashboard (src/.../ui, Streamlit Community Cloud — retires at Milestone 8)
    cited evidence · Plotly entity graph · Plotly timeline · evaluation metrics
         ▲
 Evaluation (src/.../evaluation) — precision/recall/F1 vs gold labels (data/labels/)
@@ -44,7 +47,8 @@ Evaluation (src/.../evaluation) — precision/recall/F1 vs gold labels (data/lab
 | `retrieval/` | Embedding, pgvector search, LangChain orchestration of vector + graph retrieval |
 | `graph/` | Neo4j driver boundary: schema constraints, loading, Cypher query API |
 | `evaluation/` | Gold-label scoring: extraction and retrieval precision/recall/F1 |
-| `ui/` | Streamlit app: search, graph view, timeline, metrics; no business logic. Layered as `backend.py` (only data boundary; explicit outcome objects) → pure `presenters.py`/`figures.py` → `streamlit_app.py` (wiring + caching only) — ADR-0012 |
+| `ui/` | Presentation core + Streamlit app: `backend.py` (only data boundary; explicit outcome objects) → pure `presenters.py`/`figures.py` → `streamlit_app.py` (wiring + caching only) — ADR-0012 |
+| `webapp/` | Flask product UI (ADR-0013): routes + Jinja templates + CSS design system over the unchanged `ui/` core; stateless GET-param searches; plotly.js served from the installed package |
 | `config.py` | Single settings accessor (`get_settings()`); the only env-var boundary |
 | `models.py` | Pydantic contracts shared across all subsystems; shared IDs across both stores |
 
@@ -63,8 +67,11 @@ in Postgres pivots directly to its Neo4j neighborhood without fuzzy matching. De
 
 ## Deployment Topology
 
-- **Streamlit Community Cloud** runs the app from GitHub (`requirements.txt` exported from
-  `uv.lock`); secrets injected via Streamlit secrets.
+- **Streamlit Community Cloud** runs the current public app from GitHub (`requirements.txt`
+  exported from `uv.lock`); secrets injected via Streamlit secrets.
+- **Flask web UI** runs locally today (`uv run flask --app legal_discovery_graph.webapp run`);
+  its public deployment (gunicorn on a free-tier host, secrets via host env vars) is
+  Milestone 8.
 - **Supabase** hosts PostgreSQL with the pgvector extension (managed, free tier).
 - **Neo4j AuraDB Free** hosts the graph.
 - Indexing (`scripts/index_pgvector.py`, `scripts/load_neo4j.py`) runs from the developer

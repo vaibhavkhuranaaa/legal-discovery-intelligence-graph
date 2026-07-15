@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Timeline — Legal Discovery Intelligence Graph{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="eyebrow">Extracted events</p>
+  <h1>Timeline</h1>
+  <p class="lede">
+    Chronology of events extracted from the corpus and loaded into the graph —
+    each event cites the document and chunk that evidence it.
+  </p>
+</div>
+
+{% if timeline_error %}
+  <div class="notice warn">
+    The timeline reads extracted events from the Neo4j graph, which is
+    unavailable: {{ timeline_error }}
+  </div>
+{% elif not records %}
+  <div class="notice">
+    No events are loaded in the graph — run
+    <code>uv run python scripts/load_neo4j.py</code> to extract and load the corpus.
+  </div>
+{% else %}
+  <div class="panel">
+    <h2>Event timeline</h2>
+    {% if figure_json %}
+      {% with figure_id = "timeline-chart" %}{% include "_figure.html" %}{% endwith %}
+    {% endif %}
+  </div>
+  <div class="panel spaced">
+    <h2>Citations</h2>
+    <p class="results-caption tight">
+      Table view — every event cites its evidencing document and chunk.
+    </p>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Description</th><th>Entities</th>
+            <th>Document</th><th>Document ID</th><th>Chunk ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in records %}
+            <tr>
+              <td class="mono">{{ row.date }}</td>
+              <td>{{ row.description }}</td>
+              <td>{{ row.entities }}</td>
+              <td>{{ row.document }}</td>
+              <td class="mono">{{ row.document_id }}</td>
+              <td class="mono">{{ row.chunk_id }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

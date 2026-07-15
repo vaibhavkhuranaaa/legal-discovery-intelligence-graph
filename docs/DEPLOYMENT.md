@@ -3,6 +3,13 @@
 Verified deployment runbook. The public app is live at
 `https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/`.
 
+> **Flask web UI (Milestone 7, ADR-0013):** the designed Flask app in `webapp/` is the product
+> UI going forward but is **not deployed yet**. It runs locally via
+> `uv run flask --app legal_discovery_graph.webapp run` with the same `.env` secrets. Its
+> public deployment — gunicorn on a free-tier host (Render/Railway/Fly.io), secrets via host
+> environment variables, its own smoke-test checklist — is Milestone 8; the Streamlit app below
+> stays live until then. Everything below documents the verified Streamlit deployment.
+
 ## Target Topology
 
 | Service | Role | Tier |

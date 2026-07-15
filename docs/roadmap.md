@@ -98,3 +98,23 @@ cited evidence; the entity graph, timeline, and evaluation tabs rendered success
 initial embedding-model warm-up may take longer than subsequent searches.
 
 Exit criteria: every smoke-test item checked against the live URL; README claims match reality.
+
+## Milestone 7 — Flask product web UI ✅ (local; deployment pending)
+
+Replaced the presentation layer with a designed Flask app (`webapp/`, ADR-0013): server-rendered
+Jinja pages (Investigate, Entity graph, Timeline, Evaluation) over the unchanged
+`ui/backend.py` → `presenters.py`/`figures.py` core, a hand-written CSS design system
+(paper/navy/brass, serif display type, status pills, evidence cards, stat tiles), stateless
+shareable search URLs, plotly.js served from the installed package (no CDN), and a
+CVD-validated vector-vs-hybrid comparison chart. Only new dependency: `flask`. The Streamlit
+app remains deployed and untouched until the Flask app ships publicly.
+
+Exit criteria met: all four pages verified locally against live Supabase + AuraDB (2026-07-15);
+degraded/no-credential states covered by 22 Flask test-client tests; 110 tests passing; ruff
+clean.
+
+## Milestone 8 — Flask public deployment ⬜
+
+Deploy the Flask app behind a production WSGI server (gunicorn) to a free-tier host
+(Render/Railway/Fly.io), secrets via host environment variables, smoke-test checklist against
+the live URL, switch README/live-demo links, then retire the Streamlit Community Cloud app.

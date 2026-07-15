@@ -1,0 +1,25 @@
+{# Renders one Plotly figure client-side. Expects `figure_json` (str) and
+   `figure_id` (str) in context. plotly.js is served from the installed
+   Python package via /vendor/plotly.js — no CDN request. The JSON is
+   embedded via `tojson` (escapes `<`) and parsed, never eval'd. #}
+<div class="figure" id="{{ figure_id }}"></div>
+<script src="{{ url_for('webapp.plotly_js') }}"></script>
+<script>
+  (function () {
+    const spec = JSON.parse({{ figure_json | tojson }});
+    spec.layout = spec.layout || {};
+    spec.layout.font = Object.assign(
+      {
+        family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        color: "#16232f",
+        size: 13
+      },
+      spec.layout.font || {}
+    );
+    spec.layout.paper_bgcolor = "rgba(0,0,0,0)";
+    Plotly.newPlot({{ figure_id | tojson }}, spec.data, spec.layout, {
+      responsive: true,
+      displaylogo: false
+    });
+  })();
+</script>

@@ -25,7 +25,9 @@ attrs==26.1.0
     #   jsonschema
     #   referencing
 blinker==1.9.0
-    # via streamlit
+    # via
+    #   flask
+    #   streamlit
 blis==1.3.3
     # via thinc
 cachetools==7.1.4
@@ -44,6 +46,7 @@ charset-normalizer==3.4.9
     # via requests
 click==8.4.2
     # via
+    #   flask
     #   huggingface-hub
     #   streamlit
     #   uvicorn
@@ -77,6 +80,8 @@ filelock==3.29.7
     # via
     #   huggingface-hub
     #   torch
+flask==3.1.3
+    # via legal-discovery-graph
 frozenlist==1.8.0
     # via
     #   aiohttp
@@ -121,10 +126,13 @@ idna==3.18
     #   requests
     #   yarl
 itsdangerous==2.2.0
-    # via streamlit
+    # via
+    #   flask
+    #   streamlit
 jinja2==3.1.6
     # via
     #   altair
+    #   flask
     #   pydeck
     #   spacy
     #   torch
@@ -178,7 +186,10 @@ langsmith==0.10.2
 markdown-it-py==4.2.0
     # via rich
 markupsafe==3.0.3
-    # via jinja2
+    # via
+    #   flask
+    #   jinja2
+    #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
 mpmath==1.3.0
@@ -487,6 +498,8 @@ websockets==15.0.1
     #   langgraph-sdk
     #   langsmith
     #   streamlit
+werkzeug==3.1.8
+    # via flask
 wrapt==2.2.2
     # via smart-open
 xxhash==3.8.1

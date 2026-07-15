@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Entity graph — Legal Discovery Intelligence Graph{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="eyebrow">Relationship analysis</p>
+  <h1>Entity graph</h1>
+  <p class="lede">
+    The entities and documents behind an investigation, connected only where
+    a stored, evidence-backed relation exists in Neo4j.
+  </p>
+</div>
+
+<div class="panel">
+  {% if not status.database_configured %}
+    <div class="notice error">
+      Semantic search requires PostgreSQL + pgvector. Set
+      <code>DATABASE_URL</code> (see <code>.env.example</code>) and restart.
+    </div>
+  {% else %}
+    <form class="search-form" method="get" action="{{ url_for('webapp.graph') }}">
+      <label class="field grow">
+        <span class="field-label">Question</span>
+        <input type="text" name="q" value="{{ question }}" required
+               placeholder="e.g. Who approved the payments to Northgate Supply Group?">
+      </label>
+      <input type="hidden" name="limit" value="{{ limit }}">
+      <button type="submit" class="button">Show evidence graph</button>
+    </form>
+  {% endif %}
+</div>
+
+{% if search_error %}
+  <div class="notice error spaced">
+    Investigation search failed — no evidence could be retrieved.
+    Details: {{ search_error }}
+  </div>
+{% elif searched %}
+  {% if graph_error %}
+    <div class="notice warn spaced">
+      Graph expansion is unavailable — showing vector evidence only.
+      Reason: {{ graph_error }}
+    </div>
+  {% endif %}
+  {% if figure_json %}
+    <div class="panel spaced">
+      <h2>Evidence graph</h2>
+      <p class="results-caption tight">
+        Entities (left) connect to documents (right) only where a stored,
+        evidence-backed relation exists; hover an edge midpoint for its provenance.
+        <a href="{{ url_for('webapp.investigate', q=question, limit=limit) }}">←
+        Back to the evidence for this question</a>
+      </p>
+      {% with figure_id = "entity-graph" %}{% include "_figure.html" %}{% endwith %}
+    </div>
+  {% else %}
+    <div class="notice spaced">
+      No graph relationships were found for this question's evidence —
+      nothing is drawn that the graph does not back.
+    </div>
+  {% endif %}
+{% elif status.database_configured %}
+  <div class="notice spaced">
+    Enter an investigative question above — or run one on the
+    <a href="{{ url_for('webapp.investigate') }}">Investigate</a> page and
+    follow its graph link. The graph shows the evidence behind the results.
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Legal Discovery Intelligence Graph{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="{{ url_for('webapp.investigate') }}">
+        <span class="brand-mark">§</span>Legal Discovery Intelligence Graph
+      </a>
+      <nav class="nav">
+        <a href="{{ url_for('webapp.investigate') }}"
+           class="{{ 'active' if active == 'investigate' }}">Investigate</a>
+        <a href="{{ url_for('webapp.graph') }}"
+           class="{{ 'active' if active == 'graph' }}">Entity graph</a>
+        <a href="{{ url_for('webapp.timeline') }}"
+           class="{{ 'active' if active == 'timeline' }}">Timeline</a>
+        <a href="{{ url_for('webapp.evaluation') }}"
+           class="{{ 'active' if active == 'evaluation' }}">Evaluation</a>
+      </nav>
+      <div class="status-pills">
+        <span class="pill {{ 'on' if status.database_configured else 'off' }}"
+              title="PostgreSQL + pgvector {{ 'configured' if status.database_configured else 'not configured' }}">
+          <span class="dot"></span>pgvector
+        </span>
+        <span class="pill {{ 'on' if status.graph_configured else 'off' }}"
+              title="Neo4j graph {{ 'configured' if status.graph_configured else 'not configured' }}">
+          <span class="dot"></span>Neo4j
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Synthetic corpus only — retrieved, cited evidence; no generated answers.</span>
+      <span class="mono">embeddings: {{ status.embedding_model }}</span>
+    </div>
+  </footer>
+</body>
+</html>

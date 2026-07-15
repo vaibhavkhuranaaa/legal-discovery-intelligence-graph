@@ -333,3 +333,39 @@ states with no credentials configured (AppTest-verified); all four panels verifi
 Supabase + AuraDB on 2026-07-13. A refusal/no-evidence threshold still does not exist
 (ADR-0010) — negative questions display their retrieved chunks with scores rather than a
 fabricated refusal.
+
+## ADR-0013: Flask web app as the product UI, replacing Streamlit presentation
+
+**Context:** The Streamlit dashboard (ADR-0012) is functionally complete and publicly deployed,
+but its visual identity is bounded by Streamlit's native chrome. The portfolio goal calls for a
+fully designed UI. The layering from ADR-0012 (`ui/backend.py` data boundary → pure
+`ui/presenters.py`/`ui/figures.py`) makes the rendering layer replaceable in isolation.
+
+**Decision:** (a) **A Flask app (`webapp/`) is the product UI.** Server-rendered Jinja templates
+plus one hand-written CSS design system (`static/css/theme.css`: warm-paper/navy/brass palette,
+serif display + system sans + mono stacks, no CSS framework). The Streamlit app remains in the
+repo and deployed until the Flask app has its own public deployment. (b) **Full reuse, zero
+touch:** `webapp/routes.py` calls `ui/backend.py`, `ui/presenters.py`, and `ui/figures.py`
+unchanged; database drivers still never appear in UI code. Streamlit caching maps to
+`functools.lru_cache` (retriever singleton, per-question search cache, TTL-bucketed timeline).
+(c) **Stateless navigation:** the "current question" travels as GET query parameters
+(`/?q=…&limit=…`, `/graph?q=…`), making every investigation a shareable URL instead of session
+state. (d) **No CDN, nothing vendored:** plotly.js is served at `/vendor/plotly.js` from the
+installed `plotly` Python package (`plotly.offline.get_plotlyjs()`); figure JSON is embedded
+via Jinja's `tojson` escaping and `JSON.parse`, never eval'd. System font stacks avoid font
+files entirely. (e) **Only new runtime dependency: `flask`.** (f) The evaluation page adds a
+webapp-only figure builder (`webapp/figures.py`, recall@k vector vs hybrid grouped bars) with
+the series pair `#2a78d6`/`#a8762a` validated for CVD separation and surface contrast.
+
+**Alternatives considered:** Restyling Streamlit via theming + CSS injection (fights the
+framework's DOM, breaks across Streamlit releases); third-party Streamlit component libraries
+(new dependencies, same ceiling); a JS SPA + Flask API (build tooling and a second language for
+no retrieval gain); vendoring plotly.min.js (a ~4.9 MB generated artifact in git violates the
+no-large-binaries rule); a CDN `<script>` (external runtime dependency, offline demo breaks).
+
+**Consequences:** All four views reach feature parity with the dashboard, including explicit
+degraded states (verified live against Supabase + AuraDB on 2026-07-15; route tests cover every
+degraded render without cloud access). Two UIs now share one presentation core; the Streamlit
+app is frozen except for security fixes and retires when the Flask deployment (future
+milestone: gunicorn on Render/Railway/Fly.io) is live and smoke-tested. Until then the Flask
+app runs under the dev server only and claims no public URL.

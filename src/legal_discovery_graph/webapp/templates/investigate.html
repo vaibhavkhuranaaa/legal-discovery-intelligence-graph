@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Investigate — Legal Discovery Intelligence Graph{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="eyebrow">Hybrid Graph RAG</p>
+  <h1>Investigate</h1>
+  <p class="lede">
+    Ask an investigative question and review retrieved, cited evidence —
+    semantic search over the corpus, expanded through the entity graph.
+    Every chunk shown is backed by a stored document; nothing is generated.
+  </p>
+</div>
+
+<div class="panel">
+  {% if not status.database_configured %}
+    <div class="notice error">
+      Semantic search requires PostgreSQL + pgvector. Set
+      <code>DATABASE_URL</code> (see <code>.env.example</code>) and restart —
+      searching is disabled until then.
+    </div>
+  {% else %}
+    <form class="search-form" method="get" action="{{ url_for('webapp.investigate') }}">
+      <label class="field grow">
+        <span class="field-label">Question</span>
+        <input type="text" name="q" value="{{ question }}" required
+               placeholder="e.g. Who approved the payments to Northgate Supply Group?">
+      </label>
+      <label class="field">
+        <span class="field-label">Evidence chunks</span>
+        <select name="limit">
+          {% for choice in limit_choices %}
+            <option value="{{ choice }}" {{ 'selected' if choice == limit }}>{{ choice }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit" class="button">Retrieve evidence</button>
+    </form>
+  {% endif %}
+</div>
+
+{% if search_error %}
+  <div class="notice error spaced">
+    Investigation search failed — no evidence could be retrieved.
+    Details: {{ search_error }}
+  </div>
+{% elif searched %}
+  {% if graph_error %}
+    <div class="notice warn spaced">
+      Graph expansion is unavailable — showing vector evidence only.
+      Reason: {{ graph_error }}
+    </div>
+  {% endif %}
+  {% if not rows %}
+    <div class="notice spaced">
+      No evidence was retrieved for this question. The corpus may not be
+      indexed yet — run <code>uv run python scripts/index_pgvector.py</code>.
+    </div>
+  {% else %}
+    <p class="results-caption">
+      {{ rows | length }} evidence chunks ·
+      {{ graph_contributed }} contributed by graph expansion ·
+      <a href="{{ url_for('webapp.graph', q=question, limit=limit) }}">view entity graph →</a>
+    </p>
+    {% for row in rows %}
+      <article class="evidence-card">
+        <header class="evidence-head">
+          <span class="rank-chip">{{ row.rank }}</span>
+          <div class="evidence-title">
+            <h3>{{ row.title }}</h3>
+            <span class="doc-type">{{ row.doc_type }}</span>
+          </div>
+          <div class="evidence-badges">
+            {% for source in row.sources %}
+              <span class="source-pill {{ source }}">{{ source }}</span>
+            {% endfor %}
+          </div>
+        </header>
+        <div class="evidence-scores">
+          {% if row.similarity is not none %}
+            <span class="score">
+              cosine {{ '%.3f' | format(row.similarity) }}
+              <span class="meter"><span class="meter-fill"
+                style="width: {{ (row.similarity * 100) | round(1) }}%"></span></span>
+            </span>
+          {% endif %}
+          <span class="score">fused rank score {{ '%.3f' | format(row.fused_score) }}</span>
+        </div>
+        <p class="evidence-text">{{ row.text }}</p>
+        {% if row.evidence %}
+          <details class="trail">
+            <summary>Graph evidence trail ({{ row.evidence | length }} relations)</summary>
+            <ul>
+              {% for item in row.evidence %}
+                <li>
+                  <strong>{{ item.entity_name }}</strong> —
+                  <code>{{ item.relation }}</code> — this document
+                  <span class="mono-note">(relation source chunk
+                  {{ item.source_chunk_id[:12] }}… · evidence chunk
+                  {{ item.chunk_id[:12] }}…)</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </details>
+        {% endif %}
+        <footer class="evidence-cite">
+          document <code>{{ row.document_id }}</code> · chunk <code>{{ row.chunk_id }}</code>
+        </footer>
+      </article>
+    {% endfor %}
+  {% endif %}
+{% endif %}
+{% endblock %}

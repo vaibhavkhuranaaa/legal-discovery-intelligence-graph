@@ -1,7 +1,7 @@
 # Project Context — Read This First In A New Session
 
 Self-contained handoff for the **Legal Discovery Intelligence Graph**. Contains only verified
-current state — no aspirations. Last verified: 2026-07-14 (Milestone 6 completion).
+current state — no aspirations. Last verified: 2026-07-15 (Milestone 7 completion).
 
 ## What This Project Is
 
@@ -15,7 +15,18 @@ on Streamlit Community Cloud at Milestone 6. Full design: `product.md`, `archite
 **Repository:** `github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph` (public).
 CI (GitHub Actions): `uv sync --frozen`, `ruff check`, `pytest` on pushes/PRs to `main`.
 
-## Current Status: Milestones 0–6 complete
+## Current Status: Milestones 0–7 complete
+
+**Milestone 7 — Flask product web UI (done, not yet deployed):** `webapp/` package (ADR-0013):
+Flask app factory + blueprint, four server-rendered Jinja pages (Investigate, Entity graph,
+Timeline, Evaluation) over the unchanged `ui/backend.py` → `presenters.py`/`figures.py` core,
+hand-written CSS design system (`static/css/theme.css`), stateless shareable search URLs
+(`/?q=…&limit=…`), plotly.js served from the installed package at `/vendor/plotly.js` (no CDN),
+`webapp/figures.py` recall@k vector-vs-hybrid comparison chart (CVD-validated series pair).
+Caching via `lru_cache` (retriever singleton, search cache, 60s-bucketed timeline). Only new
+dependency: `flask`. Verified 2026-07-15: all four pages against live Supabase + AuraDB;
+110 tests (22 Flask test-client tests incl. every degraded state); ruff clean. The Streamlit
+app remains the deployed UI until Milestone 8.
 
 **Milestone 0 — Foundation (done):** uv-managed Python 3.12 project (Hatchling, src layout),
 Ruff/pytest baseline, `config.py` (settings singleton), `models.py` (shared-ID Pydantic
@@ -157,7 +168,9 @@ generated data and artifacts correctly gitignored.
 
 **What does NOT exist yet (do not assume otherwise):**
 
-- No Community Cloud app, no live URL. Supabase and AuraDB are the only cloud services in use.
+- No Flask deployment: the `webapp/` UI (Milestone 7) runs locally only; the live URL is the
+  Streamlit Community Cloud app. Supabase and AuraDB are the only other cloud services in use.
+- No production WSGI server dependency yet (gunicorn arrives with Milestone 8).
 - No LLM answer generation anywhere — the dashboard displays retrieved, cited evidence only.
 - No refusal threshold in runtime code (ADR-0010); negative questions display their retrieved
   chunks with scores — the UI does not fabricate a refusal.
@@ -166,14 +179,15 @@ generated data and artifacts correctly gitignored.
 
 ```bash
 uv sync
-uv run pytest                                    # 88 tests
+uv run pytest                                    # 110 tests
 uv run ruff check .
 uv run python scripts/bootstrap_data.py          # generate corpus + labels (seed 42)
 uv run python scripts/evaluate_extraction.py     # extraction P/R/F1 -> artifacts/
 uv run python scripts/index_pgvector.py          # embed + load Supabase (needs DATABASE_URL)
 uv run python scripts/load_neo4j.py              # extract + load AuraDB graph (needs NEO4J_*)
 uv run python scripts/evaluate_retrieval.py      # vector vs graph-expanded P/R/hit@k -> artifacts/
-uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py
+uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # deployed dashboard
+uv run flask --app legal_discovery_graph.webapp run                  # Flask product UI (M7)
 ```
 
 ## Source Tree
@@ -189,9 +203,11 @@ src/legal_discovery_graph/
 ├── evaluation/      # extraction span matching + retrieval P/R/hit@k scoring
 ├── retrieval/       # embedder, PgVectorStore, SemanticRetriever, HybridRetriever (LangChain)
 ├── graph/           # Neo4j driver boundary (store) + fact-derived payload builder (loader)
-└── ui/              # dashboard: backend (data boundary) → presenters/figures (pure) →
-                     # streamlit_app (wiring); ADR-0012
-tests/               # 88 tests
+├── ui/              # presentation core + dashboard: backend (data boundary) →
+│                    # presenters/figures (pure) → streamlit_app (wiring); ADR-0012
+└── webapp/          # Flask product UI: routes + Jinja templates + CSS design system
+                     # over the unchanged ui/ core; ADR-0013
+tests/               # 110 tests
 scripts/             # bootstrap_data, evaluate_extraction, index_pgvector, load_neo4j,
                      # evaluate_retrieval (real); verify_deployment is a stub
 data/                # generated, gitignored; regenerate via bootstrap_data.py
