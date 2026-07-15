@@ -226,56 +226,106 @@ generated data and artifacts correctly gitignored.
 
 ```bash
 uv sync
-uv run pytest                                    # 113 tests
+uv run pytest                                    # 176 tests
 uv run ruff check .
 uv run python scripts/bootstrap_data.py          # generate corpus + labels (seed 42)
 uv run python scripts/evaluate_extraction.py     # extraction P/R/F1 -> artifacts/
 uv run python scripts/index_pgvector.py          # embed + load Supabase (needs DATABASE_URL)
 uv run python scripts/load_neo4j.py              # extract + load AuraDB graph (needs NEO4J_*)
-uv run python scripts/evaluate_retrieval.py      # vector vs graph-expanded P/R/hit@k -> artifacts/
-uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # deployed dashboard
-uv run flask --app legal_discovery_graph.webapp run                  # Flask product UI (M7)
+uv run python scripts/evaluate_retrieval.py      # vector vs hybrid P/R/hit@k + refusal calibration
+uv run python scripts/evaluate_flags.py          # privilege/PII flag P/R/F1 -> artifacts/
+uv run python scripts/ingest_files.py --src <dir> --custodian <name>  # real PDF/DOCX/EML
+uv run flask --app legal_discovery_graph.webapp run                   # product UI (primary)
+uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py    # legacy dashboard
 ```
 
 ## Source Tree
 
 ```
 src/legal_discovery_graph/
-├── config.py        # settings singleton — only env-var boundary
+├── config.py        # settings singleton — only env-var boundary (incl. REFUSAL_THRESHOLD,
+│                    # COUNSEL_DOMAINS, EMBEDDING_BACKEND)
 ├── models.py        # shared Pydantic contracts (IDs shared across pgvector & Neo4j)
 ├── ids.py           # deterministic uuid5 minting (ADR-0008)
 ├── datagen/         # scenario, composer, noise generator, bootstrap orchestration
-├── ingestion/       # chunker (exact body slices + offsets), pipeline w/ quarantine
+├── ingestion/       # chunker (exact body slices + offsets), pipeline w/ quarantine,
+│                    # readers/ for real PDF/DOCX/EML files (ADR-0021)
 ├── extraction/      # regex + NER lanes, resolution, events (no gold access — enforced)
-├── evaluation/      # extraction span matching + retrieval P/R/hit@k scoring
-├── retrieval/       # embedder, PgVectorStore, SemanticRetriever, HybridRetriever (LangChain)
+├── evaluation/      # extraction span matching, retrieval P/R/hit@k, refusal calibration
+├── retrieval/       # embedder (+ONNX), PgVectorStore (corpus, audit_log, fetch_document),
+│                    # SemanticRetriever, HybridRetriever (LangChain)
 ├── graph/           # Neo4j driver boundary (store) + fact-derived payload builder (loader)
-├── ui/              # presentation core + dashboard: backend (data boundary) →
-│                    # presenters/figures (pure) → streamlit_app (wiring); ADR-0012
-└── webapp/          # Flask product UI: routes + Jinja templates + CSS design system
-                     # over the unchanged ui/ core; ADR-0013
-tests/               # 110 tests
+├── review/          # rule-based privilege/PII flags (flag_text — ADR-0020)
+├── ui/              # data boundary (backend.py — all outcome objects) + presenters/figures
+│                    # (pure) + legacy streamlit_app; ADR-0012
+└── webapp/          # Flask product UI (ADR-0013): case brief at /, /investigate, /graph,
+                     # /timeline, /audit, /evaluation, /document/<id>; Jinja + theme.css
+tests/               # 176 tests
 scripts/             # bootstrap_data, evaluate_extraction, index_pgvector, load_neo4j,
-                     # evaluate_retrieval (real); verify_deployment is a stub
+                     # evaluate_retrieval, evaluate_flags, ingest_files
 data/                # generated, gitignored; regenerate via bootstrap_data.py
+artifacts/           # committed evaluation outputs — the only source of published metrics
 ```
 
 ## Known Limitations
 
-- Synthetic documents are short and clean; most fit in a single 900-char chunk (112 chunks for
-  111 docs). Retrieval recall at this granularity measured fine (R@10 0.929), so chunking was
-  left unchanged.
-- Extraction metrics on synthetic text will look better than on real-world documents —
-  disclosed in `DATA_AND_EVALUATION.md` (ADR-0005).
-- Graph expansion is one hop from seed-chunk entities; relationship R@10 stays 0.750 in both
-  modes because evidence more than one hop out is unreachable (ADR-0011).
-- Graph relationships are bounded by extraction quality: unresolved header names produce no
-  SENT/RECEIVED edge, and missed entities produce no mention edge.
+- All metrics are measured on clean synthetic text and will look better than on real
+  documents — disclosed in `DATA_AND_EVALUATION.md` and on the site itself.
+- Graph expansion is one hop from seed-chunk entities, and on the denser v3 corpus it now
+  *hurts* overall retrieval at k=10 (hit@10 0.929 → 0.893 vs vector-only) because hub
+  entities flood the rank interleave. Documented, not tuned away. Candidate fixes (not
+  implemented): cap per-query graph contributions or weight by seed rank.
+- Privilege/PII flags are precision-first regex rules measured at 1.0 only on synthetic text.
+- No authentication: the audit trail's `actor` column is reserved but empty.
+- Real-file ingestion is offline-only (free-tier RAM) and has no OCR; image-only PDFs fail
+  into the manifest.
+- Free-tier hosting sleeps/pauses without the keep-alive workflow; no database backups
+  (`docs/SCALING.md`).
 
 ## Deployment
 
-The public dashboard is live at
-`https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/` on
-Streamlit Community Cloud (Python 3.12). Supabase and AuraDB credentials are held only in
-Streamlit Secrets. Live checks on 2026-07-14 confirmed both backend health indicators, hybrid
-retrieval with cited evidence, and the entity graph, timeline, and evaluation views.
+- **Primary (Flask product UI):** `https://legal-discovery-intelligence-graph.onrender.com`
+  on Render free tier — gunicorn, ONNX embeddings (torch OOMs at 512 MB), installs
+  `requirements-render.txt` with `pip install --no-deps`. Deploys automatically on push to
+  `main`; a deploy takes ~3 minutes. Secrets live only in Render env vars.
+- **Legacy (Streamlit):**
+  `https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/` on
+  Community Cloud (installs `requirements.txt`); secrets in Streamlit Secrets.
+- Both requirements files are generated from `uv.lock` via `uv export` (never hand-edited).
+- `.github/workflows/keep-alive.yml` pings `/` every 10 min and `/audit` + `/timeline` daily
+  so Render/Supabase/AuraDB never sleep or pause.
+- Last full live smoke: 2026-07-15 (Milestone 11 + copy revision, commits `0f3a512` and
+  `56203b5`).
+
+## Working Conventions (read before making changes)
+
+These are standing agreements with the repository owner, beyond what CLAUDE.md mandates:
+
+- **Phase gates:** propose a plan, wait for approval, implement only approved scope, verify,
+  document, stop. Do not start the next milestone unprompted.
+- **Token efficiency:** batch expensive cycles — all datagen changes land in one regeneration,
+  and re-index + re-measure against live backends runs exactly once per milestone.
+- **Verification is terminal-based** (pytest, ruff, Flask test client, curl against the live
+  site). The owner checks the browser themselves; do not use browser-automation tools.
+- **Git:** conventional commits, no AI co-author trailers, commit + push after a verified
+  milestone without re-asking (standing authorization). Render redeploys on push, so push
+  means deploy.
+- **Copy style (owner requirement, 2026-07-15):** user-facing page text must be professional
+  and not read as AI-written — no em dashes in body copy (browser-tab titles keep theirs as a
+  name separator), no curly quotes, minimal jargon ("meaning-based search" rather than
+  "semantic search" in visitor-facing text). Label/score explanations use per-category tables
+  (`_glossary.html`), not prose lists.
+- **Client-safe UI (test-enforced):** internal hash IDs never render as visible text on
+  investigator pages; they may appear only inside `/document/<id>` hrefs.
+- **Honesty:** metrics come only from committed artifacts produced by scripts; regressions are
+  reported, never tuned away or hidden.
+- **Data:** everything in the corpus is synthetic; planted PII is deliberately invalid. Never
+  commit `.env`, secrets, or generated data.
+
+## Open Items
+
+- **User-side:** create the `PORTFOLIO_DISPATCH_TOKEN` GitHub Actions secret so
+  `portfolio-dispatch.yml` can succeed (the repo had no Actions secrets as of July 2026).
+- Optional future work recorded in docs: fix the hybrid-@10 regression (cap graph
+  contributions per query or weight by seed rank); add authentication so the audit trail can
+  record the actor.
