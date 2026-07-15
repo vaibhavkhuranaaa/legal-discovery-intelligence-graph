@@ -2,7 +2,7 @@
 
 **GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
 
-> **Status: deployed — Milestones 0–8 complete.** Foundation, the synthetic corpus
+> **Status: deployed — Milestones 0–9 complete.** Foundation, the synthetic corpus
 > generator (deterministic corpus + gold labels), entity/event extraction, pgvector retrieval,
 > the Neo4j relationship graph with hybrid vector+graph retrieval, and the designed Flask
 > investigation UI are done — all with reproducible evaluation. **Live demo:**
@@ -11,11 +11,11 @@
 > may take a minute). The earlier Streamlit dashboard also remains available
 > [on Community Cloud](https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/).
 >
-> **Measured results** (synthetic corpus, seed 42):
-> entity-mention extraction micro **F1 0.889 strict / 0.903 relaxed**; event extraction
-> **F1 1.000**; vector-only retrieval **R@5 0.857 / hit@5 0.893**; graph-expanded retrieval
-> **R@5 0.929 / hit@5 0.964**, lifting relationship-query **hit@5 from 0.500 to 0.833** with
-> no category degraded. Reproduce with `bootstrap_data.py`, `evaluate_extraction.py`,
+> **Measured results** (450-document synthetic corpus, seed 42):
+> entity-mention extraction micro **F1 0.888 strict / 0.899 relaxed**; event extraction
+> **F1 1.000**; vector-only retrieval **R@10 0.857 / hit@10 0.929**; graph-expanded retrieval
+> **R@10 0.964 / hit@10 1.000**, lifting relationship-query **hit@5 from 0.500 to 0.833**
+> (relationship R@10 0.500 → 0.917). Reproduce with `bootstrap_data.py`, `evaluate_extraction.py`,
 > `index_pgvector.py`, `load_neo4j.py`, and `evaluate_retrieval.py`; scores are inflated by
 > clean templated text — see [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md).
 
@@ -50,14 +50,14 @@ and a case timeline — backed by a reproducible precision/recall/F1 evaluation 
 | Layer | Technology |
 |---|---|
 | Language / tooling | Python 3.12, [uv](https://docs.astral.sh/uv/), Ruff, pytest, Hatchling (src layout) |
-| UI | Streamlit, Plotly |
+| UI | Flask + Jinja (product UI, cytoscape.js graph), Streamlit + Plotly (legacy) |
 | Orchestration | LangChain |
 | Embeddings | Hugging Face sentence-transformers |
 | Vector store | PostgreSQL + pgvector (hosted on Supabase) |
 | Graph store | Neo4j AuraDB (official Neo4j Python driver) |
 | Extraction | spaCy + deterministic regex |
 | Data contracts | Pydantic / Pydantic Settings, SQLAlchemy + psycopg |
-| Hosting | Streamlit Community Cloud, GitHub |
+| Hosting | Render (Flask product UI), Streamlit Community Cloud (legacy), GitHub |
 
 Architecture details: [docs/architecture.md](docs/architecture.md) · Data model:
 [docs/DATA_MODEL.md](docs/DATA_MODEL.md) · Decisions (ADRs): [docs/decisions.md](docs/decisions.md)
@@ -85,8 +85,8 @@ uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # legacy da
 ```
 
 `bootstrap_data.py` deterministically generates the fictional "Project Falcon" investigation
-corpus (111 documents at the default seed) with exact gold labels — 583 entity mentions,
-12 events, and 32 categorized retrieval queries (including 4 negative queries for refusal
+corpus (450 documents at the default seed) with exact gold labels — 2,189 entity mentions,
+25 events, and 32 categorized retrieval queries (including 4 negative queries for refusal
 evaluation) — see
 [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md). The dashboard shows retrieved,
 cited evidence with per-chunk graph evidence trails, an entity graph, the extracted event

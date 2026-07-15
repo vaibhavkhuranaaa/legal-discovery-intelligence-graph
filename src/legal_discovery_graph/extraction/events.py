@@ -35,6 +35,16 @@ TRIGGERS = (
     "executed",
     "terminated",
     "resigned",
+    "inspection hold",
+    "resubmission",
+    "paused",
+    "registered agent",
+    "stated that",
+    "are suspended",
+    "forwarded",
+    "terminates",
+    "presented the",
+    "demands payment",
 )
 
 _TRIGGER_RE = re.compile("|".join(re.escape(t) for t in TRIGGERS), re.IGNORECASE)

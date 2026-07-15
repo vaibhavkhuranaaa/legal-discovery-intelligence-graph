@@ -162,6 +162,14 @@ def run_bootstrap(seed: int, data_dir: Path) -> BootstrapResult:
     labels_dir = data_dir / "labels"
     failed_dir = data_dir / "failed"
 
+    # A smaller regeneration must not leave stale files from a previous run:
+    # leftover raw records share deterministic document_ids with new ones and
+    # silently corrupt extraction/retrieval evaluation.
+    for directory in (raw_dir, processed_dir, labels_dir, failed_dir):
+        if directory.is_dir():
+            for stale in directory.glob("*.json*"):
+                stale.unlink()
+
     bundle = generate_corpus(seed)
     _write_raw(bundle, raw_dir)
     ingestion = process_raw_dir(raw_dir, processed_dir, failed_dir)

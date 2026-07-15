@@ -6,7 +6,56 @@ Series colors are the CVD-validated pair used across the app: vector blue
 hover labels, so identity never rides on color alone).
 """
 
+from collections import Counter
+
 import plotly.graph_objects as go
+
+from legal_discovery_graph.ui.presenters import GraphElements
+
+_RELATION_LABELS = {
+    "co_mentioned": "co-mentioned with",
+    "sent": "sent",
+    "received": "received",
+    "event": "involved in event evidenced by",
+}
+
+
+def cytoscape_elements(elements: GraphElements) -> list[dict]:
+    """GraphElements → cytoscape.js element dicts (nodes then edges).
+
+    Nothing is invented here: every node and edge comes from an
+    evidence-backed :class:`GraphEvidence` row, and each edge carries its
+    provenance chunk IDs for display.
+    """
+    degree: Counter[str] = Counter()
+    for edge in elements.edges:
+        degree[edge.entity_id] += 1
+        degree[edge.document_id] += 1
+    nodes = [
+        {
+            "data": {
+                "id": node.node_id,
+                "label": node.label,
+                "kind": node.kind,
+                "degree": degree[node.node_id],
+            }
+        }
+        for node in elements.nodes
+    ]
+    edges = [
+        {
+            "data": {
+                "id": f"{edge.entity_id}->{edge.document_id}:{edge.relation}",
+                "source": edge.entity_id,
+                "target": edge.document_id,
+                "relation": _RELATION_LABELS.get(edge.relation, edge.relation),
+                "chunk": edge.chunk_id[:12],
+                "source_chunk": edge.source_chunk_id[:12],
+            }
+        }
+        for edge in elements.edges
+    ]
+    return nodes + edges
 
 _VECTOR_COLOR = "#2a78d6"
 _HYBRID_COLOR = "#a8762a"

@@ -1,7 +1,7 @@
 # Project Context — Read This First In A New Session
 
 Self-contained handoff for the **Legal Discovery Intelligence Graph**. Contains only verified
-current state — no aspirations. Last verified: 2026-07-15 (Milestone 8 completion).
+current state — no aspirations. Last verified: 2026-07-15 (Milestone 9 completion).
 
 ## What This Project Is
 
@@ -15,7 +15,7 @@ Streamlit dashboard on Community Cloud. Full design: `product.md`, `architecture
 **Repository:** `github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph` (public).
 CI (GitHub Actions): `uv sync --frozen`, `ruff check`, `pytest` on pushes/PRs to `main`.
 
-## Current Status: Milestones 0–8 complete
+## Current Status: Milestones 0–9 complete
 
 **Milestone 7 — Flask product web UI (done):** `webapp/` package (ADR-0013):
 Flask app factory + blueprint, four server-rendered Jinja pages (Investigate, Entity graph,
@@ -37,6 +37,15 @@ torch/sentence-transformers/streamlit/spacy) with `pip install --no-deps`. Live 
 `https://legal-discovery-intelligence-graph.onrender.com` — smoke-test checklist passed
 2026-07-15. 113 tests passing.
 
+**Milestone 9 — Richer corpus & designed views (done):** 450-document corpus (34 planted
+evidence docs, 25 events, 3 new cast members; queries fixed at 32) — ADR-0016, which also
+records the bootstrap stale-output bug found (leftover raw files with duplicate deterministic
+IDs corrupting evaluation) and fixed. All metrics re-measured 2026-07-15: extraction micro F1
+0.888 strict / 0.899 relaxed, events 1.000; hybrid R@10 0.964 / hit@10 1.000, relationship
+hit@5 0.500 → 0.833 (k=5 entity/financial dip measured and documented). Product UI (ADR-0017):
+cytoscape.js entity graph (pinned vendored asset) with provenance click-through, month-grouped
+timeline rail, evaluation page led by the transparent total model score (0.963). 116 tests.
+
 **Milestone 0 — Foundation (done):** uv-managed Python 3.12 project (Hatchling, src layout),
 Ruff/pytest baseline, `config.py` (settings singleton), `models.py` (shared-ID Pydantic
 contracts), docs set + 7 imported standards, minimal Streamlit health-check app,
@@ -52,9 +61,9 @@ contracts), docs set + 7 imported standards, minimal Streamlit health-check app,
 - `ingestion/` package: paragraph-packing chunker whose chunks are exact body slices with
   document offsets (`chunker.py`), and a pipeline with per-document failure quarantine to
   `data/failed/` (`pipeline.py`).
-- `scripts/bootstrap_data.py` CLI. At default seed 42: 111 documents (63 emails, 21 invoices,
-  17 memos, 9 meeting notes, 1 contract), 112 chunks, 149 entities, 583 gold mentions,
-  12 events, 32 categorized retrieval queries (5 entity, 6 relationship, 7 event, 5 document,
+- `scripts/bootstrap_data.py` CLI. At default seed 42 (since Milestone 9): 450 documents
+  (274 emails, 71 invoices, 65 memos, 39 meeting notes, 1 contract), 451 chunks, 2,189 gold
+  mentions, 25 events, 32 categorized retrieval queries (5 entity, 6 relationship, 7 event, 5 document,
   5 financial, 4 negative with empty relevant sets for refusal evaluation). Generator v2
   gold-labels informal name references and incidental locations.
 - Gold label files: `data/labels/{entities.json, mentions.jsonl, events.jsonl,

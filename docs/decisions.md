@@ -430,3 +430,60 @@ search returns evidence, worker RSS 362 MB after search (vs >512 MB OOM with tor
 quality is unchanged by construction and by measurement. Cost: two requirements exports to
 keep in sync (both generated, never hand-edited) and a parity test that needs both backends
 locally.
+
+## ADR-0016: 4x corpus expansion with new planted evidence; bootstrap now cleans stale outputs
+
+**Context:** The 111-document corpus made the timeline (12 events) and graph feel thin, and its
+distractor ratio was modest. The user approved growing to ~450 documents including new planted
+evidence, with the 32 gold queries held fixed.
+
+**Decision:** (a) `scenario.py` gains 13 planted documents extending the Falcon story (Crestline
+setup, QA failure + Reyes override, INV-1051R resubmission, second kickback, payment pause,
+audit workpapers/interview, payment suspension, IT exfiltration finding, termination for cause,
+board briefing, restitution demand) and 3 cast members (Kavanagh, Ellison, Whitfield): 34
+planted documents, 25 events. Three existing queries gained genuinely relevant new documents;
+no query text changed and no new-document content contradicts the four negative queries.
+(b) Noise counts are named constants (`NOISE_COUNTS`, 416 total) — 450 documents at seed 42.
+(c) The event trigger lexicon gained 10 domain phrases used by the new documents, each checked
+against noise vocabulary. (d) **Bug found and fixed during re-measurement:** `run_bootstrap`
+never removed previous outputs, so regenerating a different-sized corpus left stale raw files
+sharing deterministic document IDs with new ones — 524 files with 450 unique IDs silently
+corrupted evaluation (event precision 0.500). Bootstrap now deletes generated files in
+raw/processed/labels/failed before writing.
+
+**Consequences (all re-measured 2026-07-15 against live backends):** extraction micro F1 0.888
+strict / 0.899 relaxed, events 1.000 — on par with the small corpus despite 4x distractors.
+Retrieval: hybrid overall R@10 0.964 / hit@10 1.000; relationship hit@5 0.500 → 0.833 and R@10
+0.500 → 0.917; measured k=5 cost (entity/financial R@5 dip, recovered at k=10) reported in
+`DATA_AND_EVALUATION.md` rather than tuned away. Neo4j: 598 nodes / 1,905 relationships;
+Supabase: 451 chunks / 2,112 entity mentions.
+
+## ADR-0017: Cytoscape graph, timeline rail, and a transparent total model score
+
+**Context:** Three product-UI gaps: the Plotly bipartite graph is static, the timeline scatter
+reads poorly at 25 events, and the evaluation page buried headline results in four dense tables
+with no summary number.
+
+**Decision:** (a) **Relationship graph on cytoscape.js** — one pinned minified asset
+(`webapp/static/js/cytoscape-3.30.4.min.js`, 365 KB, MIT) is committed as a deliberate
+exception to the no-large-binaries rule (versioned filename, never fetched from a CDN). Nodes
+and edges come solely from `presenters.graph_elements` (evidence-backed only, rule unchanged)
+via `webapp/figures.cytoscape_elements`: force layout, entity/document colors matching the
+Plotly figure, node size by relation count, click-through provenance (relation + chunk IDs).
+(b) **Timeline as a month-grouped vertical rail** (`_timeline_months` in routes): serif event
+cards with entity chips and citation footers; the full table remains as a `<details>` fallback.
+(c) **Total model score** (`webapp/scores.py`): the unweighted mean of extraction micro-F1
+(strict), event F1, hybrid recall@10, and hybrid hit-rate@10 — formula stated on the page,
+components shown beside it, computed only when both artifacts exist (never defaulted). The
+evaluation page keeps the comparison chart and moves per-type/per-category tables into
+collapsed details, trimmed to @5/@10.
+
+**Alternatives considered:** d3/vis-network (larger or GPL-adjacent licensing concerns vs
+cytoscape's MIT + graph-first API); always-visible edge labels (clutter at this density);
+a weighted composite score (any weighting invites tuning-to-impress; equal weights are the
+defensible default).
+
+**Consequences:** The graph is interactive (drag/zoom/provenance) with zero external requests;
+the timeline reads as a narrative; the evaluation page leads with one honest number (0.963 on
+the current artifacts) whose derivation is verified by a route test recomputing it from the
+committed artifacts.

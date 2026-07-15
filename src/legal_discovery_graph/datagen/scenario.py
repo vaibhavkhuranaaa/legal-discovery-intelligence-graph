@@ -122,12 +122,27 @@ class Cast:
         self.delaware = make_entity(EntityType.LOCATION, "delaware", "Delaware")
         self.nevada = make_entity(EntityType.LOCATION, "nevada", "Nevada")
 
+        self.kavanagh = make_entity(EntityType.PERSON, "ruth-kavanagh", "Ruth Kavanagh")
+        self.ellison = make_entity(EntityType.PERSON, "robert-ellison", "Robert Ellison")
+        self.whitfield = make_entity(EntityType.PERSON, "dana-whitfield", "Dana Whitfield")
+
         self.contract_value = money_entity(2_400_000)
         self.apex_bid = money_entity(1_800_000)
         self.kickback = money_entity(45_000)
+        self.restitution = money_entity(840_000)
 
     def people(self) -> list[Entity]:
-        return [self.reyes, self.tran, self.webb, self.sharma, self.vasquez, self.okafor]
+        return [
+            self.reyes,
+            self.tran,
+            self.webb,
+            self.sharma,
+            self.vasquez,
+            self.okafor,
+            self.kavanagh,
+            self.ellison,
+            self.whitfield,
+        ]
 
 
 INVOICE_AMOUNTS = [310_000, 335_000, 360_000, 395_000, 430_000, 470_000]
@@ -693,6 +708,454 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
     )
     docs.append(hr_memo)
 
+    # 22. Crestline setup confirmation — Feb 25, 2023
+    c = Composer()
+    _email_header(
+        c,
+        cast.tran,
+        "otran@northgate-supply.example",
+        cast.reyes,
+        "dreyes.personal@fastmail.example",
+        dt(2023, 2, 25),
+        "paperwork done",
+    )
+    c.text("D — ").mention(cast.crestline).text(" is executed and filed. The consulting ")
+    c.text("services agreement with ").mention(cast.northgate, "Northgate")
+    c.text(" is signed and back-dated to the first of the month. Once invoicing starts, ")
+    c.text("quarterly payments route automatically. Nothing further needed from you on ")
+    c.text("paper. — O.")
+    crestline_setup = DraftDocument(
+        doc_type=DocumentType.EMAIL,
+        title="paperwork done",
+        custodian="Daniel Reyes",
+        sent_at=dt(2023, 2, 25, 20, 12),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 2, 25),
+                description=(
+                    "Crestline Holdings consulting agreement with Northgate executed "
+                    "to receive routed payments"
+                ),
+                entities=[cast.tran, cast.crestline, cast.northgate],
+            )
+        ],
+    )
+    docs.append(crestline_setup)
+
+    # 23. QA acceptance-test report — Jul 12, 2023
+    c = Composer()
+    c.text("QUALITY ASSURANCE REPORT — QA-2023-118").para()
+    c.text("Date: ").mention(date_entity(dt(2023, 7, 12))).line()
+    c.text("Author: ").mention(cast.kavanagh).text(", Lead Quality Engineer").para()
+    c.text("Acceptance testing of the June ").mention(cast.northgate)
+    c.text(" avionics delivery for ").mention(cast.falcon).text(" recorded a 22% unit ")
+    c.text("failure rate against the MSA-2023-004 specification — four of eighteen ")
+    c.text("units failed environmental stress screening. QA recommends an inspection ")
+    c.text("hold on further ").mention(cast.northgate, "Northgate")
+    c.text(" deliveries until root cause is provided.")
+    qa_report = DraftDocument(
+        doc_type=DocumentType.MEMO,
+        title="QA report QA-2023-118 — Northgate acceptance failures",
+        custodian="Ruth Kavanagh",
+        sent_at=dt(2023, 7, 12, 15, 5),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 7, 12),
+                description=(
+                    "QA reports 22% acceptance-test failure rate on Northgate units "
+                    "and recommends an inspection hold"
+                ),
+                entities=[cast.kavanagh, cast.northgate, cast.falcon],
+            )
+        ],
+    )
+    docs.append(qa_report)
+
+    # 24. Reyes overrides the QA hold — Jul 14, 2023
+    c = Composer()
+    _email_header(
+        c,
+        cast.reyes,
+        "d.reyes@meridian-aero.example",
+        cast.kavanagh,
+        "r.kavanagh@meridian-aero.example",
+        dt(2023, 7, 14),
+        "QA-2023-118 disposition",
+    )
+    c.mention(cast.kavanagh, "Ruth").text(" — I've reviewed QA-2023-118. The ")
+    c.mention(cast.falcon).text(" schedule cannot absorb an inspection hold; ")
+    c.mention(cast.northgate, "Northgate").text(" has committed to a corrective action ")
+    c.text("plan and the failed units will be reworked in the field. Release the June ")
+    c.text("delivery and process acceptance as conforming. Procurement takes ")
+    c.text("responsibility for this disposition. — ").mention(cast.reyes, "D. Reyes")
+    qa_override = DraftDocument(
+        doc_type=DocumentType.EMAIL,
+        title="QA-2023-118 disposition",
+        custodian="Ruth Kavanagh",
+        sent_at=dt(2023, 7, 14, 9, 55),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 7, 14),
+                description=(
+                    "Daniel Reyes overrides the QA inspection hold and orders the "
+                    "failed Northgate units accepted"
+                ),
+                entities=[cast.reyes, cast.kavanagh, cast.northgate, cast.falcon],
+            )
+        ],
+    )
+    docs.append(qa_override)
+
+    # 25. INV-1051R resubmission — Sep 6, 2023
+    c = Composer()
+    _email_header(
+        c,
+        cast.tran,
+        "otran@northgate-supply.example",
+        cast.vasquez,
+        "e.vasquez@meridian-aero.example",
+        dt(2023, 9, 6),
+        "Re: INV-1051 status",
+    )
+    c.text("Ms. ").mention(cast.vasquez, "Vasquez").text(",").para()
+    c.text("Our records show invoice INV-1051 from August was not received by your ")
+    c.text("payments system. Please find the resubmission attached as INV-1051R with ")
+    c.text("the original August delivery report. Kindly process at your earliest ")
+    c.text("convenience so the ").mention(cast.falcon)
+    c.text(" milestone schedule is not disrupted.").para()
+    c.mention(cast.tran).line().text("Principal, ").mention(cast.northgate, "Northgate")
+    inv_resub = DraftDocument(
+        doc_type=DocumentType.EMAIL,
+        title="Re: INV-1051 status",
+        custodian="Elena Vasquez",
+        sent_at=dt(2023, 9, 6, 11, 34),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 9, 6),
+                description=(
+                    "Northgate resubmits August invoice as INV-1051R with an identical "
+                    "delivery report, leading to double payment"
+                ),
+                entities=[cast.tran, cast.northgate, cast.vasquez],
+            )
+        ],
+    )
+    docs.append(inv_resub)
+
+    # 26. Second kickback installment — Sep 18, 2023
+    c = Composer()
+    _email_header(
+        c,
+        cast.tran,
+        "otran@northgate-supply.example",
+        cast.reyes,
+        "dreyes.personal@fastmail.example",
+        dt(2023, 9, 18),
+        "consulting arrangement — second installment",
+    )
+    c.text("D — second installment cleared today: ").mention(cast.northgate, "Northgate")
+    c.text(" wired ").mention(cast.kickback).text(" to ").mention(cast.crestline)
+    c.text(" per the schedule. I saw the audit notice — we should talk before ")
+    c.text("anything else moves. — O.")
+    kickback2 = DraftDocument(
+        doc_type=DocumentType.EMAIL,
+        title="consulting arrangement — second installment",
+        custodian="Daniel Reyes",
+        sent_at=dt(2023, 9, 18, 22, 3),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 9, 18),
+                description=(
+                    "Northgate wires the second $45,000 installment to Crestline "
+                    "Holdings despite the open audit"
+                ),
+                entities=[cast.northgate, cast.crestline, cast.kickback, cast.tran],
+            )
+        ],
+    )
+    docs.append(kickback2)
+
+    # 27. Reyes tells Tran to pause — Sep 20, 2023
+    c = Composer()
+    _email_header(
+        c,
+        cast.reyes,
+        "dreyes.personal@fastmail.example",
+        cast.tran,
+        "otran@northgate-supply.example",
+        dt(2023, 9, 20),
+        "hold",
+    )
+    c.mention(cast.tran, "Olivia").text(" — after this month, transfers to ")
+    c.mention(cast.crestline).text(" are paused until the ").mention(cast.sharma)
+    c.text(" review closes. Invoicing continues as normal — changing that now would ")
+    c.text("draw attention. No calls on company lines. — D.")
+    pause = DraftDocument(
+        doc_type=DocumentType.EMAIL,
+        title="hold",
+        custodian="Daniel Reyes",
+        sent_at=dt(2023, 9, 20, 7, 48),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 9, 20),
+                description=(
+                    "Daniel Reyes orders Crestline payments paused while the internal "
+                    "audit is open"
+                ),
+                entities=[cast.reyes, cast.tran, cast.crestline],
+            )
+        ],
+    )
+    docs.append(pause)
+
+    # 28. Audit public-records memo — Oct 5, 2023
+    c = Composer()
+    c.text("AUDIT WORKPAPER — IA-2023-19 / PR-04").para()
+    c.text("Date: ").mention(date_entity(dt(2023, 10, 5))).line()
+    c.text("Prepared by: ").mention(cast.sharma).para()
+    c.text("Public-records search results. ").mention(cast.northgate)
+    c.text(" is a ").mention(cast.nevada, "Nevada").text(" LLC registered in ")
+    c.mention(cast.reno).text("; sole listed officer is ").mention(cast.tran)
+    c.text(". ").mention(cast.crestline).text(" is registered in ")
+    c.mention(cast.delaware, "Delaware").text("; its registered agent address matches ")
+    c.text("a residential property associated with ").mention(cast.reyes)
+    c.text(" in county assessor records. Banking records subpoena to follow through ")
+    c.text("the Office of the General Counsel.")
+    records_memo = DraftDocument(
+        doc_type=DocumentType.MEMO,
+        title="Audit workpaper PR-04 — public records search",
+        custodian="Priya Sharma",
+        sent_at=dt(2023, 10, 5, 16, 20),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 10, 5),
+                description=(
+                    "Audit public-records search links Crestline's registered agent "
+                    "address to a Reyes property"
+                ),
+                entities=[cast.sharma, cast.crestline, cast.reyes],
+            )
+        ],
+    )
+    docs.append(records_memo)
+
+    # 29. Vasquez audit interview — Oct 12, 2023
+    c = Composer()
+    c.text("INTERVIEW MEMORANDUM — IA-2023-19").para()
+    c.text("Date: ").mention(date_entity(dt(2023, 10, 12))).line()
+    c.text("Interviewer: ").mention(cast.sharma).line()
+    c.text("Interviewee: ").mention(cast.vasquez).text(", Accounts Payable").para()
+    c.mention(cast.vasquez, "Vasquez").text(" stated that ")
+    c.mention(cast.northgate, "Northgate").text(" invoices arrived with identical ")
+    c.text("delivery reports month over month, that INV-1051R was processed on an ")
+    c.text("emailed instruction rather than through the portal, and that her August ")
+    c.text("escalation to ").mention(cast.webb).text(" received no procurement ")
+    c.text("response. She provided the complete AP file for ").mention(cast.falcon)
+    c.text(" without reservation.")
+    interview_notes = DraftDocument(
+        doc_type=DocumentType.MEETING_NOTES,
+        title="Interview memorandum — Vasquez, IA-2023-19",
+        custodian="Priya Sharma",
+        sent_at=dt(2023, 10, 12, 14, 10),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 10, 12),
+                description=(
+                    "Priya Sharma interviews Elena Vasquez, confirming duplicate "
+                    "delivery reports and the INV-1051R processing anomaly"
+                ),
+                entities=[cast.sharma, cast.vasquez, cast.northgate],
+            )
+        ],
+    )
+    docs.append(interview_notes)
+
+    # 30. Payment suspension memo — Nov 2, 2023
+    c = Composer()
+    c.text("FINANCE DIRECTIVE — ").mention(cast.meridian).para()
+    c.text("Date: ").mention(date_entity(dt(2023, 11, 2))).line()
+    c.text("From: ").mention(cast.webb).text(", Chief Financial Officer").para()
+    c.text("Effective immediately, all payments to ").mention(cast.northgate)
+    c.text(" are suspended pending completion of audit IA-2023-19. Accounts Payable ")
+    c.text("will reject any new ").mention(cast.northgate, "Northgate")
+    c.text(" invoices, including resubmissions, without written release from this ")
+    c.text("office. The November milestone payment on ").mention(cast.falcon)
+    c.text(" is withheld.")
+    suspend_memo = DraftDocument(
+        doc_type=DocumentType.MEMO,
+        title="Finance directive — Northgate payment suspension",
+        custodian="Marcus Webb",
+        sent_at=dt(2023, 11, 2, 8, 45),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 11, 2),
+                description=(
+                    "CFO Marcus Webb suspends all payments to Northgate pending the audit"
+                ),
+                entities=[cast.webb, cast.northgate, cast.falcon],
+            )
+        ],
+    )
+    docs.append(suspend_memo)
+
+    # 31. IT access review — Nov 16, 2023
+    c = Composer()
+    _email_header(
+        c,
+        cast.whitfield,
+        "d.whitfield@meridian-aero.example",
+        cast.sharma,
+        "p.sharma@meridian-aero.example",
+        dt(2023, 11, 16),
+        "Access review — procurement share",
+    )
+    c.mention(cast.sharma, "Priya").text(",").para()
+    c.text("Completed the access review you requested. In the 48 hours before his ")
+    c.text("account was disabled, ").mention(cast.reyes).text(" forwarded 61 documents ")
+    c.text("from the procurement share to an external personal mailbox, including the ")
+    c.text("RFP-2023-011 evaluation folder and all ").mention(cast.northgate, "Northgate")
+    c.text(" correspondence files. Full log extract attached; legal hold applied to ")
+    c.text("the mailbox gateway copies.").para()
+    c.mention(cast.whitfield).line().text("Information Security")
+    it_review = DraftDocument(
+        doc_type=DocumentType.EMAIL,
+        title="Access review — procurement share",
+        custodian="Priya Sharma",
+        sent_at=dt(2023, 11, 16, 17, 28),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 11, 16),
+                description=(
+                    "IT security finds Reyes forwarded 61 procurement documents to a "
+                    "personal mailbox before losing access"
+                ),
+                entities=[cast.whitfield, cast.reyes, cast.sharma],
+            )
+        ],
+    )
+    docs.append(it_review)
+
+    # 32. Contract termination notice — Nov 20, 2023
+    c = Composer()
+    c.text("NOTICE OF TERMINATION FOR CAUSE — MSA-2023-004").para()
+    c.text("Date: ").mention(date_entity(dt(2023, 11, 20))).line()
+    c.text("From: ").mention(cast.ellison).text(", General Counsel, ")
+    c.mention(cast.meridian).para()
+    c.text("Pursuant to Section 14 of Master Supply Agreement MSA-2023-004, ")
+    c.mention(cast.meridian, "Meridian").text(" hereby terminates the Agreement with ")
+    c.mention(cast.northgate).text(" for cause, effective immediately, on grounds of ")
+    c.text("duplicate billing, material misrepresentation of delivered milestones, and ")
+    c.text("undisclosed conflicts of interest identified by audit IA-2023-19. All ")
+    c.text("pending invoices are disputed. ").mention(cast.northgate, "Northgate")
+    c.text(" shall preserve all records relating to the ").mention(cast.falcon)
+    c.text(" program.")
+    termination = DraftDocument(
+        doc_type=DocumentType.MEMO,
+        title="Notice of termination for cause — MSA-2023-004",
+        custodian="Legal Department",
+        sent_at=dt(2023, 11, 20, 10, 30),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 11, 20),
+                description=(
+                    "Meridian terminates the Northgate master supply agreement for cause"
+                ),
+                entities=[cast.ellison, cast.meridian, cast.northgate],
+            )
+        ],
+    )
+    docs.append(termination)
+
+    # 33. Audit committee briefing — Dec 1, 2023
+    c = Composer()
+    c.text("MEETING NOTES — Audit Committee special session").para()
+    c.text("Date: ").mention(date_entity(dt(2023, 12, 1))).line()
+    c.text("Attendees: ").mention(cast.webb).text(", ").mention(cast.sharma)
+    c.text(", ").mention(cast.ellison).text(", committee members").para()
+    c.mention(cast.sharma, "Sharma").text(" presented the IA-2023-19 findings: the ")
+    c.text("duplicate INV-1051R payment, the ").mention(cast.crestline)
+    c.text(" related-party link to ").mention(cast.reyes).text(", the overridden QA ")
+    c.text("hold, and the document exfiltration identified by Information Security. ")
+    c.mention(cast.ellison, "Ellison").text(" confirmed the ")
+    c.mention(cast.northgate, "Northgate").text(" termination is effective and that a ")
+    c.text("civil recovery demand is in preparation. The committee directed quarterly ")
+    c.text("procurement control reviews going forward.")
+    board_brief = DraftDocument(
+        doc_type=DocumentType.MEETING_NOTES,
+        title="Notes — Audit Committee special session",
+        custodian="Robert Ellison",
+        sent_at=dt(2023, 12, 1, 15, 0),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 12, 1),
+                description=(
+                    "Audit Committee briefed on IA-2023-19 findings and directs "
+                    "procurement control reviews"
+                ),
+                entities=[cast.sharma, cast.webb, cast.ellison],
+            )
+        ],
+    )
+    docs.append(board_brief)
+
+    # 34. Civil recovery demand — Dec 12, 2023
+    c = Composer()
+    c.text("DEMAND FOR RESTITUTION — MSA-2023-004").para()
+    c.text("Date: ").mention(date_entity(dt(2023, 12, 12))).line()
+    c.text("From: ").mention(cast.ellison).text(", General Counsel, ")
+    c.mention(cast.meridian).line()
+    c.text("To: ").mention(cast.tran).text(", Principal, ").mention(cast.northgate).para()
+    c.mention(cast.meridian, "Meridian").text(" demands payment of ")
+    c.mention(cast.restitution).text(" within thirty days, comprising the duplicate ")
+    c.text("INV-1051R payment, overbillings identified against delivered milestones, ")
+    c.text("and amounts routed to ").mention(cast.crestline).text(" that constitute ")
+    c.text("proceeds of undisclosed self-dealing. Absent timely payment, ")
+    c.mention(cast.meridian, "Meridian").text(" will pursue all available civil ")
+    c.text("remedies.")
+    demand_letter = DraftDocument(
+        doc_type=DocumentType.MEMO,
+        title="Demand for restitution — MSA-2023-004",
+        custodian="Legal Department",
+        sent_at=dt(2023, 12, 12, 11, 15),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 12, 12),
+                description=(
+                    "Meridian demands $840,000 restitution from Northgate for the "
+                    "duplicate payment, overbillings, and Crestline transfers"
+                ),
+                entities=[cast.ellison, cast.northgate, cast.restitution, cast.crestline],
+            )
+        ],
+    )
+    docs.append(demand_letter)
+
     queries = [
         # --- entity lookup ---
         DraftQuery(
@@ -727,7 +1190,10 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
         DraftQuery(
             "What is the relationship between Daniel Reyes and Crestline Holdings?",
             "relationship",
-            [(audit_memo, "property associated with")],
+            [
+                (audit_memo, "property associated with"),
+                (records_memo, "its registered agent address matches"),
+            ],
         ),
         DraftQuery(
             "How are Olivia Tran and Northgate Supply Solutions connected?",
@@ -839,12 +1305,16 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
             [
                 (kickback, "under the consulting services agreement"),
                 (audit_memo, "whose registered agent address matches a"),
+                (kickback2, "second installment cleared today"),
             ],
         ),
         DraftQuery(
             "Which invoice did the audit flag as billed twice?",
             "financial",
-            [(audit_memo, 'resubmission labeled "INV-1051R"')],
+            [
+                (audit_memo, 'resubmission labeled "INV-1051R"'),
+                (inv_resub, "Please find the resubmission attached as INV-1051R"),
+            ],
         ),
         DraftQuery(
             "How did Northgate's monthly invoice amounts change on Project Falcon?",

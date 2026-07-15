@@ -29,53 +29,39 @@
   <p class="eyebrow">Reproducible metrics</p>
   <h1>Evaluation</h1>
   <p class="lede">
-    Extraction precision/recall/F1 against gold labels and retrieval quality
-    across 32 gold queries — loaded from committed artifacts, never hand-written.
+    Measured against gold labels on the synthetic corpus and loaded from
+    committed artifacts — never hand-written. Reproduce with
+    <code>evaluate_extraction.py</code> and <code>evaluate_retrieval.py</code>.
   </p>
 </div>
 
-<div class="panel">
-  <h2>Entity &amp; event extraction <span class="h2-note">vs gold labels</span></h2>
-  {% if extraction is none %}
-    <div class="notice">
-      No extraction metrics artifact found. Generate it with:
-      <code>uv run python scripts/bootstrap_data.py &amp;&amp;
-      uv run python scripts/evaluate_extraction.py</code>
+{% if score %}
+  <div class="panel score-panel">
+    <div class="score-hero">
+      <span class="score-value">{{ '%.3f' | format(score.total) }}</span>
+      <span class="score-label">Total model score</span>
+      <span class="score-formula">{{ score.FORMULA }} — equal weights, no tuning</span>
     </div>
-  {% else %}
-    <p class="results-caption tight">
-      seed {{ extraction.corpus.seed }} · {{ extraction.corpus.documents }} documents ·
-      {{ extraction.corpus.gold_mentions }} gold mentions ·
-      NER model <span class="mono-note">{{ extraction.ner_model }}</span>
-    </p>
-    {% if extraction.events %}
-      <div class="stat-grid">
-        <div class="stat">
-          <span class="stat-value">{{ '%.3f' | format(extraction.events.precision) }}</span>
-          <span class="stat-label">Event precision</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{{ '%.3f' | format(extraction.events.recall) }}</span>
-          <span class="stat-label">Event recall</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{{ '%.3f' | format(extraction.events.f1) }}</span>
-          <span class="stat-label">Event F1</span>
-        </div>
+    <div class="stat-grid score-components">
+      <div class="stat">
+        <span class="stat-value">{{ '%.3f' | format(score.extraction_f1) }}</span>
+        <span class="stat-label">Extraction micro F1 (strict)</span>
       </div>
-    {% endif %}
-    <div class="split">
-      <div>
-        <h3 class="table-title">Strict span matching</h3>
-        {% call pct_table(strict_rows, ('precision', 'recall', 'f1'), ('gold', 'predicted')) %}type{% endcall %}
+      <div class="stat">
+        <span class="stat-value">{{ '%.3f' | format(score.event_f1) }}</span>
+        <span class="stat-label">Event F1</span>
       </div>
-      <div>
-        <h3 class="table-title">Relaxed (overlap) matching</h3>
-        {% call pct_table(relaxed_rows, ('precision', 'recall', 'f1'), ('gold', 'predicted')) %}type{% endcall %}
+      <div class="stat">
+        <span class="stat-value">{{ '%.3f' | format(score.hybrid_recall_at_10) }}</span>
+        <span class="stat-label"><span class="swatch hybrid"></span>Hybrid recall@10</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ '%.3f' | format(score.hybrid_hit_rate_at_10) }}</span>
+        <span class="stat-label"><span class="swatch hybrid"></span>Hybrid hit rate@10</span>
       </div>
     </div>
-  {% endif %}
-</div>
+  </div>
+{% endif %}
 
 <div class="panel spaced">
   <h2>Retrieval <span class="h2-note">32 gold queries, macro-averaged</span></h2>
@@ -89,41 +75,46 @@
       embedding model <span class="mono-note">{{ retrieval.embedding_model }}</span> ·
       fusion: {{ retrieval.fusion }}
     </p>
-    <div class="stat-grid">
-      <div class="stat">
-        <span class="stat-value">{{ '%.3f' | format(retrieval.vector_only.overall['@10'].recall) }}</span>
-        <span class="stat-label"><span class="swatch vector"></span>Vector-only recall@10</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value">{{ '%.3f' | format(retrieval.graph_expanded.overall['@10'].recall) }}</span>
-        <span class="stat-label"><span class="swatch hybrid"></span>Hybrid recall@10</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value">{{ '%.3f' | format(retrieval.vector_only.overall['@10'].hit_rate) }}</span>
-        <span class="stat-label"><span class="swatch vector"></span>Vector-only hit rate@10</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value">{{ '%.3f' | format(retrieval.graph_expanded.overall['@10'].hit_rate) }}</span>
-        <span class="stat-label"><span class="swatch hybrid"></span>Hybrid hit rate@10</span>
-      </div>
-    </div>
     {% if figure_json %}
-      <h3 class="table-title">Overall recall@k — vector-only vs graph-expanded</h3>
       {% with figure_id = "retrieval-comparison" %}{% include "_figure.html" %}{% endwith %}
     {% endif %}
-    <div class="split">
-      <div>
-        <h3 class="table-title">Vector-only</h3>
-        {% call pct_table(vector_rows, ('precision', 'recall', 'hit_rate'), ()) %}scope · k{% endcall %}
+    <details>
+      <summary class="details-title">Per-category detail (@5 and @10)</summary>
+      <div class="split">
+        <div>
+          <h3 class="table-title">Vector-only</h3>
+          {% call pct_table(vector_rows, ('precision', 'recall', 'hit_rate'), ()) %}scope · k{% endcall %}
+        </div>
+        <div>
+          <h3 class="table-title">Graph-expanded (hybrid)</h3>
+          {% call pct_table(hybrid_rows, ('precision', 'recall', 'hit_rate'), ()) %}scope · k{% endcall %}
+        </div>
       </div>
-      <div>
-        <h3 class="table-title">Graph-expanded (hybrid)</h3>
-        {% call pct_table(hybrid_rows, ('precision', 'recall', 'hit_rate'), ()) %}scope · k{% endcall %}
-      </div>
-    </div>
+    </details>
     {% if retrieval.note %}
       <p class="results-caption">{{ retrieval.note }}</p>
     {% endif %}
+  {% endif %}
+</div>
+
+<div class="panel spaced">
+  <h2>Entity &amp; event extraction <span class="h2-note">vs gold labels</span></h2>
+  {% if extraction is none %}
+    <div class="notice">
+      No extraction metrics artifact found. Generate it with:
+      <code>uv run python scripts/bootstrap_data.py &amp;&amp;
+      uv run python scripts/evaluate_extraction.py</code>
+    </div>
+  {% else %}
+    <p class="results-caption tight">
+      seed {{ extraction.corpus.seed }} · {{ extraction.corpus.documents }} documents ·
+      {{ extraction.corpus.gold_mentions }} gold mentions ·
+      NER model <span class="mono-note">{{ extraction.ner_model }}</span>
+    </p>
+    <details>
+      <summary class="details-title">Per-type detail (strict span matching)</summary>
+      {% call pct_table(strict_rows, ('precision', 'recall', 'f1'), ('gold', 'predicted')) %}type{% endcall %}
+    </details>
   {% endif %}
 </div>
 {% endblock %}

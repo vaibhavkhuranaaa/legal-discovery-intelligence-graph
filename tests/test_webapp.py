@@ -219,7 +219,7 @@ class TestGraphPage:
         assert response.status_code == 200
         assert "Enter an investigative question" in response.text
 
-    def test_graph_evidence_renders_plotly_figure(
+    def test_graph_evidence_renders_cytoscape_canvas(
         self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         ranked = (
@@ -229,9 +229,10 @@ class TestGraphPage:
         )
         _stub_search(monkeypatch, backend.InvestigationOutcome(result=_result(ranked), error=None))
         response = client.get("/graph?q=who+paid")
-        assert 'id="entity-graph"' in response.text
-        assert "/vendor/plotly.js" in response.text
-        assert "Omar Tran" in response.text  # figure JSON carries real node labels
+        assert 'id="cy"' in response.text
+        assert "cytoscape-3.30.4.min.js" in response.text
+        assert "Omar Tran" in response.text  # element JSON carries real node labels
+        assert "co-mentioned with" in response.text  # relation label with provenance
 
     def test_no_relationships_draws_nothing(
         self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
@@ -242,7 +243,12 @@ class TestGraphPage:
         _stub_search(monkeypatch, backend.InvestigationOutcome(result=_result(ranked), error=None))
         response = client.get("/graph?q=who+paid")
         assert "No graph relationships were found" in response.text
-        assert 'id="entity-graph"' not in response.text
+        assert 'id="cy"' not in response.text
+
+    def test_vendored_cytoscape_is_served(self, client: FlaskClient) -> None:
+        response = client.get("/static/js/cytoscape-3.30.4.min.js")
+        assert response.status_code == 200
+        assert len(response.data) > 300_000
 
 
 class TestTimelinePage:
@@ -250,7 +256,7 @@ class TestTimelinePage:
         response = client.get("/timeline")
         assert "Neo4j unreachable (stub)" in response.text
 
-    def test_events_render_chart_and_citation_table(
+    def test_events_render_rail_and_citation_table(
         self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         events = (_event(3, "Wire transfer approved"), _event(5, "Audit opened"))
@@ -260,10 +266,12 @@ class TestTimelinePage:
             lambda bucket: backend.TimelineOutcome(events=events, error=None),
         )
         response = client.get("/timeline")
-        assert 'id="timeline-chart"' in response.text
+        assert response.text.count("rail-event") == 2  # one card per event
+        assert "March 2024" in response.text  # month bucket label
         assert "Wire transfer approved" in response.text
+        assert "Omar Tran" in response.text  # entity chip
         assert "Audit memo" in response.text
-        assert response.text.count("<tr>") == 3  # header + 2 events
+        assert response.text.count("<tr>") == 3  # table fallback: header + 2 events
 
     def test_no_events_points_to_load_command(
         self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
@@ -278,15 +286,30 @@ class TestTimelinePage:
 
 
 class TestEvaluationPage:
-    def test_committed_artifacts_render_tiles_chart_and_tables(
+    def test_committed_artifacts_render_score_chart_and_details(
         self, client: FlaskClient
     ) -> None:
         # Uses the real committed artifacts in artifacts/ — no fabrication.
+        import json
+        from pathlib import Path
+
         response = client.get("/evaluation")
         assert response.status_code == 200
-        assert response.text.count('class="stat"') >= 4  # event + retrieval headline tiles
+        assert "Total model score" in response.text
+        # The hero number must equal the hand-computed mean of the artifacts.
+        extraction = json.loads(Path("artifacts/extraction_metrics.json").read_text())
+        retrieval = json.loads(Path("artifacts/retrieval_metrics.json").read_text())
+        overall = retrieval["graph_expanded"]["overall"]["@10"]
+        expected = (
+            extraction["mentions_strict"]["micro"]["f1"]
+            + extraction["events"]["f1"]
+            + overall["recall"]
+            + overall["hit_rate"]
+        ) / 4
+        assert f'<span class="score-value">{expected:.3f}</span>' in response.text
+        assert response.text.count('class="stat"') == 4  # the four components
         assert 'id="retrieval-comparison"' in response.text
-        assert "Strict span matching" in response.text
+        assert "Per-type detail" in response.text
         assert "Graph-expanded (hybrid)" in response.text
 
     def test_missing_artifacts_show_generation_commands(
@@ -296,7 +319,29 @@ class TestEvaluationPage:
         response = client.get("/evaluation")
         assert "evaluate_extraction.py" in response.text
         assert "evaluate_retrieval.py" in response.text
+        assert "Total model score" not in response.text  # never invented
         assert 'id="retrieval-comparison"' not in response.text
+
+
+class TestTotalScore:
+    def test_mean_of_four_components(self) -> None:
+        from legal_discovery_graph.webapp.scores import total_model_score
+
+        extraction = {
+            "mentions_strict": {"micro": {"f1": 0.8}},
+            "events": {"f1": 1.0},
+        }
+        retrieval = {"graph_expanded": {"overall": {"@10": {"recall": 0.9, "hit_rate": 0.7}}}}
+        score = total_model_score(extraction, retrieval)
+        assert score is not None
+        assert score.total == pytest.approx((0.8 + 1.0 + 0.9 + 0.7) / 4)
+
+    def test_missing_artifact_or_key_yields_none(self) -> None:
+        from legal_discovery_graph.webapp.scores import total_model_score
+
+        assert total_model_score(None, {}) is None
+        assert total_model_score({}, None) is None
+        assert total_model_score({"mentions_strict": {}}, {"graph_expanded": {}}) is None
 
 
 def test_plotly_bundle_is_served_locally(client: FlaskClient) -> None:

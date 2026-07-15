@@ -602,6 +602,51 @@ h1 {
   background: #a8762a;
 }
 
+.score-panel {
+  border-left: 3px solid var(--brass);
+}
+
+.score-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 1.1rem;
+}
+
+.score-value {
+  font-family: var(--font-display);
+  font-size: 3.2rem;
+  font-weight: 600;
+  color: var(--navy);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.score-formula {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.score-components {
+  margin-bottom: 0;
+}
+
+.details-title {
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0.75rem 0;
+}
+
 .split {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
@@ -617,6 +662,154 @@ h1 {
   text-transform: uppercase;
   color: var(--ink-soft);
   margin: 1.1rem 0 0.5rem;
+}
+
+/* ---------- Cytoscape graph ---------- */
+
+#cy {
+  width: 100%;
+  height: 560px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle, rgba(20, 44, 71, 0.05) 1px, transparent 1px) 0 0 / 22px 22px,
+    var(--paper);
+}
+
+.cy-detail {
+  margin-top: 0.75rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--brass);
+  border-radius: var(--radius);
+  background: var(--paper);
+  padding: 0.7rem 1rem;
+  font-size: 0.88rem;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 0.25rem;
+}
+
+.legend-swatch.entity {
+  background: #1baf7a;
+}
+
+.legend-swatch.document {
+  background: #2a78d6;
+  border-radius: 2px;
+}
+
+/* ---------- Timeline rail ---------- */
+
+.rail {
+  max-width: 46rem;
+}
+
+.rail-month {
+  position: relative;
+  padding-left: 2rem;
+  border-left: 2px solid var(--line-strong);
+  margin-left: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.rail-month-label {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--brass);
+  margin: 1.5rem 0 0.9rem;
+}
+
+.rail-month:first-child .rail-month-label {
+  margin-top: 0;
+}
+
+.rail-event {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.rail-dot {
+  position: absolute;
+  left: calc(-2rem - 2px - 5px);
+  top: 1.15rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--brass);
+  border: 2px solid var(--paper);
+}
+
+.rail-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 0.9rem 1.2rem;
+}
+
+.rail-date {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--ink-faint);
+  margin-bottom: 0.25rem;
+}
+
+.rail-desc {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--navy);
+  margin: 0 0 0.55rem;
+  line-height: 1.45;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #1d6247;
+  background: #e2f2ea;
+  border: 1px solid #c0e0d0;
+  border-radius: 999px;
+  padding: 0.12rem 0.55rem;
+}
+
+.rail-cite {
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+  font-size: 0.76rem;
+  color: var(--ink-faint);
+}
+
+.rail-cite code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: rgba(20, 44, 71, 0.05);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+}
+
+.table-fallback {
+  margin-top: 1.75rem;
+}
+
+.table-fallback summary {
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 0.75rem;
 }
 
 /* ---------- Footer ---------- */

@@ -8,12 +8,12 @@ bookmarkable URLs.
 """
 
 import time
+from datetime import datetime
 from functools import lru_cache
 
 from flask import Blueprint, Response, render_template, request
 
 from legal_discovery_graph.ui import backend
-from legal_discovery_graph.ui.figures import entity_graph_figure, timeline_figure
 from legal_discovery_graph.ui.presenters import (
     EvidenceRow,
     evidence_rows,
@@ -22,7 +22,8 @@ from legal_discovery_graph.ui.presenters import (
     retrieval_table,
     timeline_frame,
 )
-from legal_discovery_graph.webapp.figures import retrieval_comparison_figure
+from legal_discovery_graph.webapp.figures import cytoscape_elements, retrieval_comparison_figure
+from legal_discovery_graph.webapp.scores import total_model_score
 
 bp = Blueprint("webapp", __name__)
 
@@ -97,7 +98,7 @@ def graph() -> str:
         "limit": limit,
         "search_error": None,
         "graph_error": None,
-        "figure_json": None,
+        "elements": None,
         "searched": False,
     }
     if question and backend.backend_status().database_configured:
@@ -109,9 +110,9 @@ def graph() -> str:
             result = outcome.result
             if not result.graph_available:
                 context["graph_error"] = result.graph_error or "unknown"
-            figure = entity_graph_figure(graph_elements(result))
-            if figure is not None:
-                context["figure_json"] = figure.to_json()
+            graph_data = graph_elements(result)
+            if graph_data.edges:
+                context["elements"] = cytoscape_elements(graph_data)
     return render_template("graph.html", **context)
 
 
@@ -125,16 +126,26 @@ def _timeline_cached(bucket: int) -> backend.TimelineOutcome:
     return backend.fetch_timeline()
 
 
+def _timeline_months(records: list[dict]) -> list[dict]:
+    """Group chronological event records into month buckets for the rail view."""
+    months: list[dict] = []
+    for record in records:
+        label = datetime.strptime(record["date"], "%Y-%m-%d").strftime("%B %Y")
+        if not months or months[-1]["label"] != label:
+            months.append({"label": label, "events": []})
+        months[-1]["events"].append(record)
+    return months
+
+
 @bp.get("/timeline")
 def timeline() -> str:
     outcome = _timeline_cached(int(time.time() // _TIMELINE_TTL_SECONDS))
-    figure = timeline_figure(outcome.events) if outcome.events else None
     records = timeline_frame(outcome.events).to_dict("records") if outcome.events else []
     return render_template(
         "timeline.html",
         active="timeline",
         timeline_error=outcome.error,
-        figure_json=figure.to_json() if figure is not None else None,
+        months=_timeline_months(records),
         records=records,
     )
 
@@ -165,15 +176,19 @@ def evaluation() -> str:
         "extraction": extraction,
         "retrieval": retrieval,
         "figure_json": None,
+        "score": total_model_score(extraction, retrieval),
     }
     if extraction is not None:
-        for key, matching in (("strict_rows", "strict"), ("relaxed_rows", "relaxed")):
-            rows = extraction_table(extraction, matching).to_dict("records")
-            context[key] = [{"label": row["type"], **row} for row in rows]
+        rows = extraction_table(extraction, "strict").to_dict("records")
+        context["strict_rows"] = [{"label": row["type"], **row} for row in rows]
     if retrieval is not None:
         for key, mode in (("vector_rows", "vector_only"), ("hybrid_rows", "graph_expanded")):
             rows = retrieval_table(retrieval, mode).to_dict("records")
-            context[key] = [{"label": f"{row['scope']} {row['k']}", **row} for row in rows]
+            context[key] = [
+                {"label": f"{row['scope']} {row['k']}", **row}
+                for row in rows
+                if row["k"] in ("@5", "@10")
+            ]
         figure = retrieval_comparison_figure(retrieval)
         if figure is not None:
             context["figure_json"] = figure.to_json()

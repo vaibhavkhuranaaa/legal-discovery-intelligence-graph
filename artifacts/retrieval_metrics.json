@@ -6,24 +6,24 @@
     "negative_queries": 4,
     "overall": {
       "@1": {
-        "hit_rate": 0.6071,
-        "precision": 0.6071,
-        "recall": 0.5536
+        "hit_rate": 0.5357,
+        "precision": 0.5357,
+        "recall": 0.4762
       },
       "@10": {
-        "hit_rate": 0.9643,
-        "precision": 0.1071,
-        "recall": 0.9464
+        "hit_rate": 1.0,
+        "precision": 0.1179,
+        "recall": 0.9643
       },
       "@3": {
-        "hit_rate": 0.9286,
-        "precision": 0.3333,
-        "recall": 0.9107
+        "hit_rate": 0.7143,
+        "precision": 0.25,
+        "recall": 0.6488
       },
       "@5": {
-        "hit_rate": 0.9643,
-        "precision": 0.2071,
-        "recall": 0.9286
+        "hit_rate": 0.8929,
+        "precision": 0.1929,
+        "recall": 0.8095
       }
     },
     "per_category": {
@@ -39,9 +39,9 @@
           "recall": 1.0
         },
         "@3": {
-          "hit_rate": 1.0,
-          "precision": 0.3333,
-          "recall": 1.0
+          "hit_rate": 0.8,
+          "precision": 0.2667,
+          "recall": 0.8
         },
         "@5": {
           "hit_rate": 1.0,
@@ -51,9 +51,9 @@
       },
       "entity": {
         "@1": {
-          "hit_rate": 0.4,
-          "precision": 0.4,
-          "recall": 0.3
+          "hit_rate": 0.2,
+          "precision": 0.2,
+          "recall": 0.2
         },
         "@10": {
           "hit_rate": 1.0,
@@ -61,14 +61,14 @@
           "recall": 1.0
         },
         "@3": {
-          "hit_rate": 1.0,
-          "precision": 0.4,
-          "recall": 1.0
+          "hit_rate": 0.4,
+          "precision": 0.1333,
+          "recall": 0.3
         },
         "@5": {
-          "hit_rate": 1.0,
-          "precision": 0.24,
-          "recall": 1.0
+          "hit_rate": 0.6,
+          "precision": 0.16,
+          "recall": 0.6
         }
       },
       "event": {
@@ -97,44 +97,44 @@
         "@1": {
           "hit_rate": 1.0,
           "precision": 1.0,
-          "recall": 0.9
+          "recall": 0.7667
         },
         "@10": {
           "hit_rate": 1.0,
-          "precision": 0.12,
-          "recall": 1.0
+          "precision": 0.14,
+          "recall": 0.9
         },
         "@3": {
           "hit_rate": 1.0,
           "precision": 0.4,
-          "recall": 1.0
+          "recall": 0.8333
         },
         "@5": {
           "hit_rate": 1.0,
           "precision": 0.24,
-          "recall": 1.0
+          "recall": 0.8333
         }
       },
       "relationship": {
         "@1": {
-          "hit_rate": 0.3333,
-          "precision": 0.3333,
-          "recall": 0.25
+          "hit_rate": 0.1667,
+          "precision": 0.1667,
+          "recall": 0.0833
         },
         "@10": {
-          "hit_rate": 0.8333,
-          "precision": 0.1,
-          "recall": 0.75
+          "hit_rate": 1.0,
+          "precision": 0.1333,
+          "recall": 0.9167
         },
         "@3": {
-          "hit_rate": 0.6667,
-          "precision": 0.2222,
-          "recall": 0.5833
+          "hit_rate": 0.3333,
+          "precision": 0.1111,
+          "recall": 0.25
         },
         "@5": {
           "hit_rate": 0.8333,
           "precision": 0.1667,
-          "recall": 0.6667
+          "recall": 0.5833
         }
       }
     },
@@ -166,24 +166,24 @@
     "negative_queries": 4,
     "overall": {
       "@1": {
-        "hit_rate": 0.6071,
-        "precision": 0.6071,
-        "recall": 0.5536
+        "hit_rate": 0.5357,
+        "precision": 0.5357,
+        "recall": 0.4762
       },
       "@10": {
-        "hit_rate": 0.9643,
+        "hit_rate": 0.9286,
         "precision": 0.1036,
-        "recall": 0.9286
+        "recall": 0.8571
       },
       "@3": {
-        "hit_rate": 0.8929,
-        "precision": 0.3095,
-        "recall": 0.8393
+        "hit_rate": 0.8214,
+        "precision": 0.2857,
+        "recall": 0.7381
       },
       "@5": {
-        "hit_rate": 0.8929,
+        "hit_rate": 0.8571,
         "precision": 0.1929,
-        "recall": 0.8571
+        "recall": 0.8036
       }
     },
     "per_category": {
@@ -211,9 +211,9 @@
       },
       "entity": {
         "@1": {
-          "hit_rate": 0.4,
-          "precision": 0.4,
-          "recall": 0.3
+          "hit_rate": 0.2,
+          "precision": 0.2,
+          "recall": 0.2
         },
         "@10": {
           "hit_rate": 1.0,
@@ -221,14 +221,14 @@
           "recall": 0.9
         },
         "@3": {
-          "hit_rate": 1.0,
-          "precision": 0.3333,
-          "recall": 0.9
+          "hit_rate": 0.6,
+          "precision": 0.2,
+          "recall": 0.5
         },
         "@5": {
-          "hit_rate": 1.0,
-          "precision": 0.2,
-          "recall": 0.9
+          "hit_rate": 0.8,
+          "precision": 0.16,
+          "recall": 0.7
         }
       },
       "event": {
@@ -257,34 +257,34 @@
         "@1": {
           "hit_rate": 1.0,
           "precision": 1.0,
-          "recall": 0.9
+          "recall": 0.7667
         },
         "@10": {
           "hit_rate": 1.0,
-          "precision": 0.12,
-          "recall": 1.0
+          "precision": 0.14,
+          "recall": 0.9
         },
         "@3": {
           "hit_rate": 1.0,
           "precision": 0.4,
-          "recall": 1.0
+          "recall": 0.8333
         },
         "@5": {
           "hit_rate": 1.0,
-          "precision": 0.24,
-          "recall": 1.0
+          "precision": 0.28,
+          "recall": 0.9
         }
       },
       "relationship": {
         "@1": {
-          "hit_rate": 0.3333,
-          "precision": 0.3333,
-          "recall": 0.25
+          "hit_rate": 0.1667,
+          "precision": 0.1667,
+          "recall": 0.0833
         },
         "@10": {
-          "hit_rate": 0.8333,
-          "precision": 0.1,
-          "recall": 0.75
+          "hit_rate": 0.6667,
+          "precision": 0.0833,
+          "recall": 0.5
         },
         "@3": {
           "hit_rate": 0.5,
@@ -302,15 +302,15 @@
       "negative_top1_scores": {
         "16aa4c0460635bba98959bea381033a0": 0.474,
         "1e0fcea8964f5026a9f5fffddf606a8a": 0.4556,
-        "3662c8e2fe005bec875eb417c5edca77": 0.3114,
+        "3662c8e2fe005bec875eb417c5edca77": 0.3502,
         "f1b0e9790f9d5c598bea9b7719359126": 0.4917
       },
       "note": "Negative queries have empty relevant sets; scores below measure whether a similarity threshold can separate them from answerable queries.",
       "separation": {
-        "answerable_top1_mean": 0.6042,
-        "answerable_top1_min": 0.3787,
+        "answerable_top1_mean": 0.6197,
+        "answerable_top1_min": 0.4149,
         "negative_top1_max": 0.4917,
-        "negative_top1_mean": 0.4332,
+        "negative_top1_mean": 0.4429,
         "separable": false
       }
     }

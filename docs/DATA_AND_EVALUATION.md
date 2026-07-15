@@ -15,8 +15,8 @@ corpus (byte-identical per seed, regression-tested):
   company, until an internal audit unravels it (`datagen/scenario.py`) — 21 planted evidence
   documents plus ~90 routine noise documents (facilities notices, unrelated invoices, routine
   memos) so retrieval is non-trivial.
-- At the default seed 42: **111 documents** (63 emails, 21 invoices, 17 memos, 9 meeting notes,
-  1 contract), 112 chunks, 149 entities, 583 gold mentions, 12 events, **32 gold queries**
+- At the default seed 42: **450 documents** (274 emails, 71 invoices, 65 memos, 39 meeting
+  notes, 1 contract), 451 chunks, 2,189 gold mentions, 25 events, **32 gold queries**
   (generator v2: informal name references like "Daniel," / "Mr. Reyes" and incidental
   locations are gold-labeled too, so NER is not penalized for finding them).
 - All names, organizations, amounts, and events are fictional; email domains use `.example`
@@ -59,20 +59,21 @@ overlap):
 Both strict (exact span) and relaxed (overlap) matching are reported; matching is one-to-one
 greedy within each (document, entity type) group.
 
-**Measured results (Milestone 2)** — reproduce with
+**Measured results (450-document corpus, re-measured 2026-07-15; original Milestone 2 run on
+the 111-document corpus scored micro F1 0.889 strict / 0.903 relaxed)** — reproduce with
 `uv run python scripts/bootstrap_data.py && uv run python scripts/evaluate_extraction.py`
 (seed 42, spaCy `en_core_web_sm` 3.8.0 pinned; full breakdown in
 `artifacts/extraction_metrics.json`):
 
 | Type | P (strict) | R (strict) | F1 (strict) | P (relaxed) | R (relaxed) | F1 (relaxed) |
 |---|---|---|---|---|---|---|
-| person | 0.996 | 0.838 | 0.910 | 0.996 | 0.838 | 0.910 |
-| organization | 0.635 | 0.742 | 0.684 | 0.712 | 0.831 | 0.767 |
+| person | 0.998 | 0.839 | 0.912 | 0.999 | 0.840 | 0.913 |
+| organization | 0.583 | 0.718 | 0.644 | 0.658 | 0.811 | 0.727 |
 | money | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
 | date | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
 | project | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
-| location | 0.652 | 1.000 | 0.789 | 0.652 | 1.000 | 0.789 |
-| **micro** | **0.903** | **0.877** | **0.889** | **0.917** | **0.890** | **0.903** |
+| location | 0.550 | 1.000 | 0.709 | 0.550 | 1.000 | 0.709 |
+| **micro** | **0.904** | **0.872** | **0.888** | **0.916** | **0.883** | **0.899** |
 | events (doc+date) | 1.000 | 1.000 | 1.000 | | | |
 
 **Honest reading of these numbers** (extraction design: ADR-0009):
@@ -107,7 +108,7 @@ evidence set):
   behavior: the system should refuse or return an explicit no-evidence state rather than
   presenting irrelevant chunks as support.
 
-#### Measured — Milestone 3, vector-only (seed 42, run 2026-07-13)
+#### Measured — vector-only (seed 42, 450-document corpus, run 2026-07-15)
 
 `sentence-transformers/all-MiniLM-L6-v2` (normalized, 384-dim) over Supabase pgvector with an
 HNSW cosine index; 28 answerable + 4 negative queries, top-10 retrieved per query,
@@ -116,27 +117,27 @@ macro-averaged. Reproduce with `uv run python scripts/evaluate_retrieval.py` (fu
 
 | scope | P@1 | R@1 | hit@1 | R@5 | hit@5 | R@10 | hit@10 |
 |---|---|---|---|---|---|---|---|
-| overall | 0.607 | 0.554 | 0.607 | 0.857 | 0.893 | 0.929 | 0.964 |
+| overall | 0.536 | 0.476 | 0.536 | 0.804 | 0.857 | 0.857 | 0.929 |
 | document | 0.400 | 0.400 | 0.400 | 1.000 | 1.000 | 1.000 | 1.000 |
-| entity | 0.400 | 0.300 | 0.400 | 0.900 | 1.000 | 0.900 | 1.000 |
+| entity | 0.200 | 0.200 | 0.200 | 0.700 | 0.800 | 0.900 | 1.000 |
 | event | 0.857 | 0.857 | 0.857 | 1.000 | 1.000 | 1.000 | 1.000 |
-| financial | 1.000 | 0.900 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
-| relationship | 0.333 | 0.250 | 0.333 | 0.417 | 0.500 | 0.750 | 0.833 |
+| financial | 1.000 | 0.767 | 1.000 | 0.900 | 1.000 | 0.900 | 1.000 |
+| relationship | 0.167 | 0.083 | 0.167 | 0.417 | 0.500 | 0.500 | 0.667 |
 
 Honest findings, kept as-is rather than tuned away:
 
-- **Relationship queries are the weakest lane** (hit@5 0.500 vs ≥ 1.000 for every other
+- **Relationship queries are the weakest lane** (hit@5 0.500 vs ≥ 0.800 for every other
   category). Multi-hop questions ("who connects X to Y?") are exactly what pure vector
   similarity cannot answer — this gap is the measured baseline the Milestone 4 graph expansion
   must improve on.
 - **Top-1 similarity alone cannot drive refusal.** The best-scoring chunk for the four negative
-  queries reaches cosine similarity 0.492, while some answerable queries' top hits score as low
-  as 0.379 — the distributions overlap, so a plain score threshold would either miss refusals
+  queries overlapped the answerable queries' top-hit scores (0.492 vs 0.379 on the original
+  111-document measurement) — the distributions overlap, so a plain score threshold would either miss refusals
   or refuse answerable queries. Refusal handling in the dashboard milestone must therefore use
   more than the raw top-1 score (per-query score margins and/or graph corroboration). No
   threshold was tuned on these 32 queries.
 
-#### Measured — Milestone 4, graph-expanded (seed 42, run 2026-07-13)
+#### Measured — graph-expanded (seed 42, 450-document corpus, run 2026-07-15)
 
 Same pass and query set as above; the hybrid ranking interleaves the pgvector leg with
 evidence-backed Neo4j expansion (top-5 vector hits seed co-mention / correspondence / event
@@ -146,26 +147,30 @@ by `uv run python scripts/evaluate_retrieval.py`; per-query evidence trails are 
 
 | scope | P@1 | R@1 | hit@1 | R@5 | hit@5 | R@10 | hit@10 |
 |---|---|---|---|---|---|---|---|
-| overall | 0.607 | 0.554 | 0.607 | 0.929 | 0.964 | 0.946 | 0.964 |
+| overall | 0.536 | 0.476 | 0.536 | 0.809 | 0.893 | 0.964 | 1.000 |
 | document | 0.400 | 0.400 | 0.400 | 1.000 | 1.000 | 1.000 | 1.000 |
-| entity | 0.400 | 0.300 | 0.400 | 1.000 | 1.000 | 1.000 | 1.000 |
+| entity | 0.200 | 0.200 | 0.200 | 0.600 | 0.600 | 1.000 | 1.000 |
 | event | 0.857 | 0.857 | 0.857 | 1.000 | 1.000 | 1.000 | 1.000 |
-| financial | 1.000 | 0.900 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
-| relationship | 0.333 | 0.250 | 0.333 | 0.667 | 0.833 | 0.750 | 0.833 |
+| financial | 1.000 | 0.767 | 1.000 | 0.833 | 1.000 | 0.900 | 1.000 |
+| relationship | 0.167 | 0.083 | 0.167 | 0.583 | 0.833 | 0.917 | 1.000 |
 
 The graph's contribution, measured not asserted:
 
-- **Relationship hit@5 0.500 → 0.833** (R@5 0.417 → 0.667) — the multi-hop gap vector
-  similarity could not close is exactly where evidence-backed expansion helps; overall hit@5
-  rises 0.893 → 0.964 and no category degrades at any k. Top-1 metrics are structurally
-  unchanged: interleaving never displaces the vector leg's first hit.
+- **Relationship hit@5 0.500 → 0.833 and R@10 0.500 → 0.917** — the multi-hop gap vector
+  similarity could not close is exactly where evidence-backed expansion helps; overall hit@10
+  rises 0.929 → 1.000 (R@10 0.857 → 0.964) and hit@5 0.857 → 0.893. Top-1 metrics are
+  structurally unchanged: interleaving never displaces the vector leg's first hit.
+- **Measured cost at k=5 on the 450-document corpus:** interleaved graph hits displace some
+  vector hits early — entity R@5 drops 0.700 → 0.600 and financial R@5 0.900 → 0.833, both
+  fully recovered by k=10. Reported as measured; the fusion is not tuned per category.
 - **Summed RRF was measured and rejected** (ADR-0011): its intersection boost let
   graph-connected hub chunks displace correct vector top-1 hits (overall hit@1 0.607 → 0.143
   in that configuration). The failed measurement is recorded because it motivated the fusion
   design; only the interleaved configuration ships.
-- Relationship R@10 stays 0.750 in both modes — evidence more than one hop from every seed
-  entity is still out of reach, a known limitation for the dashboard milestone to surface
-  honestly rather than hide.
+- On the original 111-document corpus, relationship R@10 was stuck at 0.750 in both modes;
+  the expanded corpus's richer evidence trails (new planted documents inside one hop of seed
+  entities) lift the hybrid leg to 0.917 while vector-only stays at 0.500 — one-hop expansion
+  remains the structural limit.
 
 ### Reporting rules
 

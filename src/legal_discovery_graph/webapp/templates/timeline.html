@@ -21,17 +21,37 @@
     <code>uv run python scripts/load_neo4j.py</code> to extract and load the corpus.
   </div>
 {% else %}
-  <div class="panel">
-    <h2>Event timeline</h2>
-    {% if figure_json %}
-      {% with figure_id = "timeline-chart" %}{% include "_figure.html" %}{% endwith %}
-    {% endif %}
+  <p class="results-caption tight">{{ records | length }} extracted events</p>
+  <div class="rail">
+    {% for month in months %}
+      <section class="rail-month">
+        <h2 class="rail-month-label">{{ month.label }}</h2>
+        {% for event in month.events %}
+          <article class="rail-event">
+            <span class="rail-dot" aria-hidden="true"></span>
+            <div class="rail-card">
+              <div class="rail-date">{{ event.date }}</div>
+              <p class="rail-desc">{{ event.description }}</p>
+              {% if event.entities %}
+                <div class="chip-row">
+                  {% for name in event.entities.split(', ') %}
+                    <span class="chip">{{ name }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <footer class="rail-cite">
+                {{ event.document }} · <code>{{ event.document_id[:12] }}…</code>
+                · chunk <code>{{ event.chunk_id[:12] }}…</code>
+              </footer>
+            </div>
+          </article>
+        {% endfor %}
+      </section>
+    {% endfor %}
   </div>
-  <div class="panel spaced">
-    <h2>Citations</h2>
-    <p class="results-caption tight">
-      Table view — every event cites its evidencing document and chunk.
-    </p>
+
+  <details class="table-fallback">
+    <summary>Table view — every event with its full citation</summary>
     <div class="table-scroll">
       <table class="data-table">
         <thead>
@@ -54,6 +74,6 @@
         </tbody>
       </table>
     </div>
-  </div>
+  </details>
 {% endif %}
 {% endblock %}

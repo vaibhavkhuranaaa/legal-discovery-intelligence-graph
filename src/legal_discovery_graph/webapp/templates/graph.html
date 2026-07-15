@@ -41,16 +41,80 @@
       Reason: {{ graph_error }}
     </div>
   {% endif %}
-  {% if figure_json %}
+  {% if elements %}
     <div class="panel spaced">
       <h2>Evidence graph</h2>
       <p class="results-caption tight">
-        Entities (left) connect to documents (right) only where a stored,
-        evidence-backed relation exists; hover an edge midpoint for its provenance.
+        <span class="legend-swatch entity"></span> entities ·
+        <span class="legend-swatch document"></span> documents ·
+        node size = number of evidence-backed relations. Drag to rearrange,
+        scroll to zoom, click a connection for its provenance.
         <a href="{{ url_for('webapp.investigate', q=question, limit=limit) }}">←
         Back to the evidence for this question</a>
       </p>
-      {% with figure_id = "entity-graph" %}{% include "_figure.html" %}{% endwith %}
+      <div id="cy"></div>
+      <div id="cy-detail" class="cy-detail" hidden></div>
+      <script src="{{ url_for('static', filename='js/cytoscape-3.30.4.min.js') }}"></script>
+      <script>
+        const elements = JSON.parse({{ elements | tojson | tojson }});
+        const cy = cytoscape({
+          container: document.getElementById("cy"),
+          elements: elements,
+          wheelSensitivity: 0.2,
+          style: [
+            {
+              selector: "node",
+              style: {
+                label: "data(label)",
+                width: "mapData(degree, 1, 10, 22, 56)",
+                height: "mapData(degree, 1, 10, 22, 56)",
+                "font-size": 11,
+                "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                color: "#16232f",
+                "text-valign": "bottom",
+                "text-margin-y": 6,
+                "text-wrap": "ellipsis",
+                "text-max-width": 140,
+                "border-width": 2,
+                "border-color": "#fffdf9"
+              }
+            },
+            { selector: 'node[kind = "entity"]', style: { "background-color": "#1baf7a" } },
+            { selector: 'node[kind = "document"]', style: { "background-color": "#2a78d6", shape: "round-rectangle" } },
+            {
+              selector: "edge",
+              style: {
+                width: 1.5,
+                "line-color": "#cfc7b8",
+                "curve-style": "bezier",
+                "target-arrow-shape": "none"
+              }
+            },
+            { selector: "edge:selected", style: { "line-color": "#a8762a", width: 3 } },
+            { selector: "node:selected", style: { "border-color": "#a8762a", "border-width": 3 } }
+          ],
+          layout: { name: "cose", animate: false, padding: 30, nodeRepulsion: 40000 }
+        });
+        const detail = document.getElementById("cy-detail");
+        cy.on("tap", "edge", (evt) => {
+          const d = evt.target.data();
+          const src = cy.getElementById(d.source).data("label");
+          const tgt = cy.getElementById(d.target).data("label");
+          detail.hidden = false;
+          detail.innerHTML =
+            "<strong>" + src + "</strong> — " + d.relation + " — <strong>" + tgt +
+            "</strong><br><span class='mono-note'>evidence chunk " + d.chunk +
+            "… · relation source chunk " + d.source_chunk + "…</span>";
+        });
+        cy.on("tap", "node", (evt) => {
+          const d = evt.target.data();
+          detail.hidden = false;
+          detail.innerHTML =
+            "<strong>" + d.label + "</strong> (" + d.kind + ") — " + d.degree +
+            " evidence-backed relation" + (d.degree === 1 ? "" : "s");
+        });
+        cy.on("tap", (evt) => { if (evt.target === cy) detail.hidden = true; });
+      </script>
     </div>
   {% else %}
     <div class="notice spaced">

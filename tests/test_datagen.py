@@ -45,7 +45,7 @@ def test_different_seed_changes_output(
 def test_corpus_size_and_types(result: tuple[BootstrapResult, Path]) -> None:
     bootstrap, _ = result
     documents = [document for document, _ in bootstrap.bundle.documents]
-    assert 100 <= len(documents) <= 200
+    assert 400 <= len(documents) <= 550
     present_types = {document.doc_type for document in documents}
     assert present_types == set(DocumentType)
 

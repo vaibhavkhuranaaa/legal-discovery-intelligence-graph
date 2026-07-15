@@ -122,3 +122,15 @@ worker (torch > 512 MB), fixed by the ONNX embedding backend (ADR-0015) — same
 Live at `https://legal-discovery-intelligence-graph.onrender.com`, smoke-test checklist passed
 2026-07-15; README links updated. The Streamlit Community Cloud app remains up as the legacy
 dashboard. 113 tests passing.
+
+## Milestone 9 — Richer corpus & designed views ✅
+
+4x corpus with new planted evidence (ADR-0016): 450 documents, 25 timeline events, 3 new cast
+members, queries fixed at 32; bootstrap stale-output bug found and fixed; all metrics
+re-measured against live backends and re-documented honestly (hybrid R@10 0.964 / hit@10 1.000,
+relationship hit@5 0.500 → 0.833; measured k=5 entity/financial dip reported). Product UI
+(ADR-0017): interactive cytoscape.js entity graph with click-through provenance, month-grouped
+vertical timeline rail with entity chips and citations, and an evaluation page led by a
+transparent total model score (mean of the four headline metrics — 0.963) with detail tables
+collapsed. Verified locally against live Supabase + AuraDB and re-deployed to Render.
+116 tests passing.

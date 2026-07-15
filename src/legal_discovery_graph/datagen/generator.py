@@ -198,12 +198,17 @@ def _noise_meeting_notes(rng: random.Random) -> DraftDocument:
     )
 
 
+# Noise volume per document type. With the 34 planted evidence documents this
+# yields a 450-document corpus (~92% distractors) — deterministic per seed.
+NOISE_COUNTS = {"emails": 260, "memos": 55, "invoices": 65, "meeting_notes": 36}
+
+
 def _build_noise(rng: random.Random, cast: Cast) -> list[DraftDocument]:
     drafts: list[DraftDocument] = []
-    drafts.extend(_noise_email(rng) for _ in range(55))
-    drafts.extend(_noise_memo(rng, cast) for _ in range(12))
-    drafts.extend(_noise_invoice(rng, cast, i) for i in range(15))
-    drafts.extend(_noise_meeting_notes(rng) for _ in range(8))
+    drafts.extend(_noise_email(rng) for _ in range(NOISE_COUNTS["emails"]))
+    drafts.extend(_noise_memo(rng, cast) for _ in range(NOISE_COUNTS["memos"]))
+    drafts.extend(_noise_invoice(rng, cast, i) for i in range(NOISE_COUNTS["invoices"]))
+    drafts.extend(_noise_meeting_notes(rng) for _ in range(NOISE_COUNTS["meeting_notes"]))
     return drafts
 
 
