@@ -1,0 +1,55 @@
+{
+  "$schema": "https://yourdomain.com/schemas/project-manifest-v1.json",
+  "version": 1,
+  "slug": "legal-discovery-intelligence-graph",
+  "title": "Legal Discovery Intelligence Graph",
+  "summary": "A deployed Graph RAG investigation workspace with cited evidence, entity graphs, and reproducible evaluation.",
+  "industries": [
+    "Legal technology"
+  ],
+  "categories": [
+    "AI/ML",
+    "Analytics",
+    "Data Engineering"
+  ],
+  "stack": [
+    "Python",
+    "Flask",
+    "LangChain",
+    "sentence-transformers",
+    "ONNX Runtime",
+    "PostgreSQL + pgvector",
+    "Neo4j AuraDB",
+    "Supabase",
+    "Plotly"
+  ],
+  "githubUrl": "https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph",
+  "liveUrl": "https://legal-discovery-intelligence-graph.onrender.com",
+  "deployment": {
+    "provider": "Render",
+    "status": "live",
+    "runtime": "Flask + gunicorn"
+  },
+  "metrics": [
+    "Entity extraction F1 0.889 strict",
+    "Graph retrieval R@5 0.929",
+    "Graph relationship hit@5 0.833"
+  ],
+  "stages": [
+    "Synthetic corpus generation",
+    "Entity and event extraction",
+    "Vector indexing",
+    "Graph loading",
+    "Hybrid retrieval",
+    "Flask web delivery"
+  ],
+  "architecture": [
+    "Discovery corpus",
+    "Extraction",
+    "pgvector retrieval",
+    "Neo4j graph",
+    "Evidence orchestration",
+    "Investigation web UI"
+  ],
+  "disclaimer": "All documents, people, companies, amounts, and events are synthetic and fictional. The displayed results are reproducible evaluation results on a templated corpus."
+}
