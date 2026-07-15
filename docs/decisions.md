@@ -399,3 +399,34 @@ instances sleep and lose the Hugging Face cache, so the first search after idle 
 the model (~90 MB) — surfaced to users as a slow first search, consistent with the cold-start
 failure boundary. The live URL is claimed in README/docs only after the smoke-test checklist
 passes against it.
+
+## ADR-0015: ONNX embedding backend for the deployed web app
+
+**Context:** The first Render deploy (ADR-0014) OOM-killed its worker on every search: CPU
+torch + sentence-transformers exceed the free tier's 512 MB. The pgvector index is built with
+torch MiniLM embeddings, so any serving-side replacement must produce the same vectors.
+
+**Decision:** (a) A second embedder, `OnnxEmbedder` (`retrieval/embeddings.py`), reimplements
+the exact MiniLM pipeline — tokenize (pad/truncate 256), ONNX forward pass from the model
+repo's own `onnx/model.onnx`, attention-mask mean pooling, L2 normalization — on onnxruntime,
+with no torch anywhere in the process. (b) `EMBEDDING_BACKEND` setting selects `torch`
+(default: dev, indexing, evaluation, Streamlit Cloud) or `onnx` (Render, set in
+`render.yaml`); both flow through `build_embedder()` behind an `Embedder` protocol.
+(c) **Parity is enforced, not assumed:** `tests/test_embeddings_parity.py` asserts cross-
+backend cosine > 0.9999, and `scripts/evaluate_retrieval.py` run with `EMBEDDING_BACKEND=onnx`
+against live Supabase produced a byte-identical `retrieval_metrics.json`. (d) Render installs
+`requirements-render.txt` — `uv export --prune torch --prune sentence-transformers --prune
+streamlit --prune spacy` — via `pip install --no-deps` (the export is the complete locked
+closure; `--no-deps` stops pip re-resolving pruned packages back in through the project's own
+dependency list).
+
+**Alternatives considered:** sentence-transformers `backend="onnx"` (still imports torch — the
+memory does not go away); paid Render instance (recurring cost to avoid a bounded engineering
+fix); fastembed (third-party re-export of the model — parity not guaranteed against our index);
+quantized ONNX (unnecessary once fp32 fits).
+
+**Consequences:** Verified in a torch-free venv built exactly as Render builds: real hybrid
+search returns evidence, worker RSS 362 MB after search (vs >512 MB OOM with torch). Retrieval
+quality is unchanged by construction and by measurement. Cost: two requirements exports to
+keep in sync (both generated, never hand-edited) and a parity test that needs both backends
+locally.

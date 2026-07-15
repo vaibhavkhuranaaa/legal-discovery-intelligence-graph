@@ -12,7 +12,12 @@ Verified deployment runbook. The public app is live at
 
 Infrastructure is committed as `render.yaml` (ADR-0014): free web service, gunicorn
 (`--workers 1 --threads 4 --timeout 300`) serving `legal_discovery_graph.webapp:create_app()`,
-health check on `/`. Torch is pinned to CPU wheels on Linux so the build stays small.
+health check on `/`. The server runs the ONNX embedding backend (`EMBEDDING_BACKEND=onnx`,
+ADR-0015) and installs `requirements-render.txt` — the locked closure minus
+torch/sentence-transformers/streamlit/spacy — via `pip install --no-deps`, because torch does
+not fit in the free tier's 512 MB (measured OOM; 362 MB RSS with ONNX). Regenerate that file
+with `uv export --format requirements-txt --no-dev --no-hashes --emit-index-url --prune torch
+--prune sentence-transformers --prune streamlit --prune spacy -o requirements-render.txt`.
 
 Operator steps (Render dashboard):
 

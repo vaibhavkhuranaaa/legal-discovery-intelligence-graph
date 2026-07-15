@@ -3,7 +3,10 @@ plus hybrid orchestration with Neo4j graph expansion."""
 
 from legal_discovery_graph.retrieval.embeddings import (
     EMBEDDING_DIMENSION,
+    Embedder,
+    OnnxEmbedder,
     SentenceTransformerEmbedder,
+    build_embedder,
 )
 from legal_discovery_graph.retrieval.hybrid import (
     GraphHit,
@@ -24,6 +27,9 @@ __all__ = [
     "RankedChunk",
     "RetrievedChunk",
     "SemanticRetriever",
+    "Embedder",
+    "OnnxEmbedder",
     "SentenceTransformerEmbedder",
+    "build_embedder",
     "fuse_rankings",
 ]

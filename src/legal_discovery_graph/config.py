@@ -37,8 +37,11 @@ class Settings(BaseSettings):
     neo4j_username: str = ""
     neo4j_password: str = ""
 
-    # Embeddings
+    # Embeddings. Backend "torch" (sentence-transformers) is the default for
+    # dev/indexing/evaluation; "onnx" serves the same vectors from onnxruntime
+    # on memory-constrained hosts (ADR-0015).
     embedding_model_name: str = _DEFAULT_EMBEDDING_MODEL
+    embedding_backend: str = "torch"
 
     # Application behavior
     app_env: str = "development"

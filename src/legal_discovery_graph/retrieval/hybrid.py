@@ -29,7 +29,7 @@ from langchain_core.runnables import Runnable, RunnableLambda
 
 from legal_discovery_graph.config import get_settings
 from legal_discovery_graph.graph import GraphEvidence, GraphUnavailableError, Neo4jGraphStore
-from legal_discovery_graph.retrieval.embeddings import SentenceTransformerEmbedder
+from legal_discovery_graph.retrieval.embeddings import Embedder, build_embedder
 from legal_discovery_graph.retrieval.store import PgVectorStore, RetrievedChunk
 
 
@@ -117,7 +117,7 @@ class HybridRetriever:
     def __init__(
         self,
         store: PgVectorStore,
-        embedder: SentenceTransformerEmbedder,
+        embedder: Embedder,
         graph: Neo4jGraphStore | None,
         graph_error: str | None = None,
     ) -> None:
@@ -145,7 +145,7 @@ class HybridRetriever:
             graph_error = str(exc)
         return cls(
             store=PgVectorStore(settings.database_url),
-            embedder=SentenceTransformerEmbedder(settings.embedding_model_name),
+            embedder=build_embedder(settings.embedding_model_name, settings.embedding_backend),
             graph=graph,
             graph_error=graph_error,
         )

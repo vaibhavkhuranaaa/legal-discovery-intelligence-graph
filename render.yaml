@@ -6,7 +6,10 @@ services:
     name: legal-discovery-intelligence-graph
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    # requirements-render.txt is the full locked closure minus torch/streamlit/
+    # spacy (ADR-0015) — --no-deps stops pip re-resolving the pruned packages
+    # back in via the project's own dependency list.
+    buildCommand: pip install --no-deps -r requirements-render.txt
     # One worker + threads to fit the free tier's 512 MB; generous timeout so the
     # first search can download/load the sentence-transformer on a cold start.
     startCommand: gunicorn --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT "legal_discovery_graph.webapp:create_app()"
@@ -14,6 +17,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.11
+      - key: EMBEDDING_BACKEND
+        value: onnx
       - key: DATABASE_URL
         sync: false
       - key: NEO4J_URI
