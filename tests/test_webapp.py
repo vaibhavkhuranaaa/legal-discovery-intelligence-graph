@@ -26,6 +26,17 @@ def client(monkeypatch: pytest.MonkeyPatch) -> FlaskClient:
         "_timeline_cached",
         lambda bucket: backend.TimelineOutcome(events=(), error="Neo4j unreachable (stub)"),
     )
+    # Fabricated results carry empty vector_hits (top similarity 0.0), which the
+    # calibrated default threshold would refuse; disable refusal unless a test
+    # opts in via _stub_settings.
+    _stub_settings(monkeypatch, refusal_threshold=0.0)
+    # Audit I/O never touches a live database in tests.
+    monkeypatch.setattr(backend, "record_search_audit", lambda **kwargs: None)
+    monkeypatch.setattr(
+        backend,
+        "fetch_search_audit",
+        lambda limit=50: backend.AuditOutcome(rows=(), error=None),
+    )
     app = create_app()
     app.config.update(TESTING=True)
     return app.test_client()
@@ -64,14 +75,30 @@ def _evidence(chunk_id: str) -> GraphEvidence:
     )
 
 
-def _result(ranked: tuple[RankedChunk, ...], graph_available: bool = True) -> HybridResult:
+def _result(
+    ranked: tuple[RankedChunk, ...],
+    graph_available: bool = True,
+    vector_hits: tuple[RetrievedChunk, ...] = (),
+) -> HybridResult:
     return HybridResult(
         question="who paid?",
         ranked=ranked,
-        vector_hits=(),
+        vector_hits=vector_hits,
         graph_hits=(),
         graph_available=graph_available,
         graph_error=None if graph_available else "Neo4j unreachable",
+    )
+
+
+def _stub_settings(monkeypatch: pytest.MonkeyPatch, refusal_threshold: float) -> None:
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(
+        routes,
+        "get_settings",
+        lambda: SimpleNamespace(
+            refusal_threshold=refusal_threshold, counsel_domains="hartwellpace.example"
+        ),
     )
 
 
@@ -97,6 +124,7 @@ def _event(day: int, description: str) -> TimelineEvent:
         ("/", "Investigate"),
         ("/graph", "Entity graph"),
         ("/timeline", "Timeline"),
+        ("/audit", "Audit trail"),
         ("/evaluation", "Evaluation"),
     ],
 )
@@ -157,7 +185,10 @@ class TestInvestigateSearch:
         assert response.text.count("evidence-card") == 2
         assert "cosine 0.910" in response.text  # vector hit shows similarity
         assert "Omar Tran" in response.text  # graph trail rendered
-        assert "doc-v1" in response.text and "chunk" in response.text  # citations
+        # Citations are client-facing: title · doc type · passage — never hash IDs.
+        assert "Falcon memo · memo · passage 1" in response.text
+        assert "doc-v1" not in response.text
+        assert "seed-chunk-0000" not in response.text
         assert "1 contributed by graph expansion" in response.text
 
     def test_graph_degradation_shows_warning_with_reason(
@@ -195,6 +226,66 @@ class TestInvestigateSearch:
         response = client.get("/?q=who+paid")
         assert "No evidence was retrieved" in response.text
         assert "index_pgvector.py" in response.text
+
+    def test_below_threshold_search_is_refused_with_override_link(
+        self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        ranked = (
+            RankedChunk(_chunk("v1", 0.31), fused_score=1.0, sources=("vector",), evidence=()),
+        )
+        result = _result(ranked, vector_hits=(_chunk("v1", 0.31),))
+        _stub_search(monkeypatch, backend.InvestigationOutcome(result=result, error=None))
+        _stub_settings(monkeypatch, refusal_threshold=0.5)
+        response = client.get("/?q=unsupported+question")
+        assert "No supporting evidence found" in response.text
+        assert "evidence-card" not in response.text
+        assert "all=1" in response.text  # override link offered
+
+    def test_refusal_override_shows_matches_with_warning(
+        self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        ranked = (
+            RankedChunk(_chunk("v1", 0.31), fused_score=1.0, sources=("vector",), evidence=()),
+        )
+        result = _result(ranked, vector_hits=(_chunk("v1", 0.31),))
+        _stub_search(monkeypatch, backend.InvestigationOutcome(result=result, error=None))
+        _stub_settings(monkeypatch, refusal_threshold=0.5)
+        response = client.get("/?q=unsupported+question&all=1")
+        assert response.text.count("evidence-card") == 1
+        assert "below the calibrated evidence threshold" in response.text
+
+    def test_above_threshold_search_is_not_refused(
+        self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        ranked = (
+            RankedChunk(_chunk("v1", 0.82), fused_score=1.0, sources=("vector",), evidence=()),
+        )
+        result = _result(ranked, vector_hits=(_chunk("v1", 0.82),))
+        _stub_search(monkeypatch, backend.InvestigationOutcome(result=result, error=None))
+        _stub_settings(monkeypatch, refusal_threshold=0.5)
+        response = client.get("/?q=who+paid")
+        assert response.text.count("evidence-card") == 1
+        assert "No supporting evidence found" not in response.text
+
+    def test_privilege_and_pii_flags_render_badges(
+        self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        chunk = RetrievedChunk(
+            chunk_id="p1",
+            document_id="doc-p1",
+            sequence=0,
+            text=(
+                "PRIVILEGED AND CONFIDENTIAL — remit to account number 0004482913 "
+                "for the retainer."
+            ),
+            metadata={"title": "Counsel email", "doc_type": "email"},
+            score=0.9,
+        )
+        ranked = (RankedChunk(chunk, fused_score=1.0, sources=("vector",), evidence=()),)
+        _stub_search(monkeypatch, backend.InvestigationOutcome(result=_result(ranked), error=None))
+        response = client.get("/?q=who+paid")
+        assert "potentially privileged" in response.text
+        assert "PII: bank account" in response.text
 
     def test_invalid_limit_falls_back_to_default(
         self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
@@ -271,6 +362,7 @@ class TestTimelinePage:
         assert "Wire transfer approved" in response.text
         assert "Omar Tran" in response.text  # entity chip
         assert "Audit memo" in response.text
+        assert "chunk-1" not in response.text  # internal IDs never render
         assert response.text.count("<tr>") == 3  # table fallback: header + 2 events
 
     def test_no_events_points_to_load_command(
@@ -283,6 +375,73 @@ class TestTimelinePage:
         )
         response = client.get("/timeline")
         assert "load_neo4j.py" in response.text
+
+
+class TestAuditPage:
+    def test_search_is_recorded_with_refusal_outcome(
+        self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        recorded: list[dict] = []
+        monkeypatch.setattr(
+            backend, "record_search_audit", lambda **kwargs: recorded.append(kwargs)
+        )
+        ranked = (
+            RankedChunk(_chunk("v1", 0.31), fused_score=1.0, sources=("vector",), evidence=()),
+        )
+        result = _result(ranked, vector_hits=(_chunk("v1", 0.31),))
+        _stub_search(monkeypatch, backend.InvestigationOutcome(result=result, error=None))
+        _stub_settings(monkeypatch, refusal_threshold=0.5)
+        client.get("/?q=unsupported+question")
+        assert len(recorded) == 1
+        assert recorded[0]["question"] == "unsupported question"
+        assert recorded[0]["refused"] is True
+        assert recorded[0]["result_count"] == 1
+
+    def test_rows_render_in_table(
+        self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        rows = (
+            {
+                "searched_at": datetime(2026, 7, 15, 9, 30, 12, tzinfo=UTC),
+                "question": "Who approved the payments?",
+                "result_limit": 10,
+                "result_count": 10,
+                "refused": False,
+                "graph_available": True,
+                "duration_ms": 412,
+            },
+            {
+                "searched_at": datetime(2026, 7, 15, 9, 31, 40, tzinfo=UTC),
+                "question": "Were there whistleblower complaints?",
+                "result_limit": 10,
+                "result_count": 10,
+                "refused": True,
+                "graph_available": True,
+                "duration_ms": 96,
+            },
+        )
+        monkeypatch.setattr(
+            backend,
+            "fetch_search_audit",
+            lambda limit=50: backend.AuditOutcome(rows=rows, error=None),
+        )
+        response = client.get("/audit")
+        assert "Who approved the payments?" in response.text
+        assert "refused (below threshold)" in response.text
+        assert "evidence shown" in response.text
+        assert "412 ms" in response.text
+
+    def test_unavailable_store_shows_reason(
+        self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            backend,
+            "fetch_search_audit",
+            lambda limit=50: backend.AuditOutcome(rows=(), error="OperationalError: db down"),
+        )
+        response = client.get("/audit")
+        assert "could not be read" in response.text
+        assert "OperationalError: db down" in response.text
 
 
 class TestEvaluationPage:

@@ -138,3 +138,50 @@ class TestStoreHelpers:
         )
         already = "postgresql+psycopg://u:p@h/db"
         assert to_sqlalchemy_url(already) == already
+
+
+class TestRefusalCalibration:
+    @staticmethod
+    def _labeled(scores: dict[str, tuple[float, bool]]):
+        from legal_discovery_graph.evaluation.retrieval_eval import calibrate_refusal_threshold
+
+        queries = [
+            _query(query_id, {"gold"} if answerable else set())
+            for query_id, (_, answerable) in scores.items()
+        ]
+        results = {
+            query_id: [RankedHit("chunk", score)] for query_id, (score, _) in scores.items()
+        }
+        return calibrate_refusal_threshold(queries, results)
+
+    def test_separable_scores_yield_perfect_threshold(self):
+        calibration = self._labeled(
+            {
+                "n1": (0.30, False),
+                "n2": (0.35, False),
+                "a1": (0.60, True),
+                "a2": (0.80, True),
+            }
+        )
+        assert calibration is not None
+        assert 0.35 < calibration["threshold"] < 0.60
+        assert calibration["accuracy"] == 1.0
+        assert calibration["negatives_refused"] == 2
+        assert calibration["false_refusals"] == 0
+
+    def test_overlapping_scores_report_honest_accuracy(self):
+        calibration = self._labeled(
+            {
+                "n1": (0.50, False),
+                "n2": (0.70, False),  # scores above an answerable query
+                "a1": (0.60, True),
+                "a2": (0.80, True),
+            }
+        )
+        assert calibration is not None
+        assert calibration["accuracy"] < 1.0
+        assert calibration["negatives_refused"] + calibration["false_refusals"] > 0
+
+    def test_missing_class_returns_none(self):
+        assert self._labeled({"a1": (0.9, True)}) is None
+        assert self._labeled({"n1": (0.2, False)}) is None

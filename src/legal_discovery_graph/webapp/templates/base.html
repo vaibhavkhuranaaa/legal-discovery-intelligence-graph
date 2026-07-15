@@ -19,6 +19,8 @@
            class="{{ 'active' if active == 'graph' }}">Entity graph</a>
         <a href="{{ url_for('webapp.timeline') }}"
            class="{{ 'active' if active == 'timeline' }}">Timeline</a>
+        <a href="{{ url_for('webapp.audit') }}"
+           class="{{ 'active' if active == 'audit' }}">Audit</a>
         <a href="{{ url_for('webapp.evaluation') }}"
            class="{{ 'active' if active == 'evaluation' }}">Evaluation</a>
       </nav>

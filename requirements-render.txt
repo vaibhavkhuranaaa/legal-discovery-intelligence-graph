@@ -121,6 +121,8 @@ langsmith==0.10.2
     #   langchain-classic
     #   langchain-community
     #   langchain-core
+lxml==6.1.1
+    # via python-docx
 markupsafe==3.0.3
     # via
     #   flask
@@ -187,8 +189,12 @@ pydantic-settings==2.14.2
     # via
     #   langchain-community
     #   legal-discovery-graph
+pypdf==6.14.2
+    # via legal-discovery-graph
 python-dateutil==2.9.0.post0
     # via pandas
+python-docx==1.2.0
+    # via legal-discovery-graph
 python-dotenv==1.2.2
     # via
     #   legal-discovery-graph
@@ -238,6 +244,7 @@ typing-extensions==4.16.0
     #   psycopg
     #   pydantic
     #   pydantic-core
+    #   python-docx
     #   sqlalchemy
     #   typing-inspection
 typing-inspection==0.4.2

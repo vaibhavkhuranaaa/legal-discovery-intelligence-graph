@@ -7,7 +7,7 @@
   <p class="lede">
     Ask an investigative question and review retrieved, cited evidence —
     semantic search over the corpus, expanded through the entity graph.
-    Every chunk shown is backed by a stored document; nothing is generated.
+    Every passage shown is backed by a stored document; nothing is generated.
   </p>
 </div>
 
@@ -26,7 +26,7 @@
                placeholder="e.g. Who approved the payments to Northgate Supply Group?">
       </label>
       <label class="field">
-        <span class="field-label">Evidence chunks</span>
+        <span class="field-label">Evidence passages</span>
         <select name="limit">
           {% for choice in limit_choices %}
             <option value="{{ choice }}" {{ 'selected' if choice == limit }}>{{ choice }}</option>
@@ -43,7 +43,30 @@
     Investigation search failed — no evidence could be retrieved.
     Details: {{ search_error }}
   </div>
+{% elif refused %}
+  <div class="panel spaced refusal-panel">
+    <h2>No supporting evidence found</h2>
+    <p>
+      The corpus does not appear to contain evidence for this question. The
+      strongest semantic match scored cosine
+      <span class="mono-note">{{ '%.3f' | format(refused.top) }}</span>, below the
+      calibrated evidence threshold of
+      <span class="mono-note">{{ '%.3f' | format(refused.threshold) }}</span>
+      (measured on the gold query set — see
+      <a href="{{ url_for('webapp.evaluation') }}">Evaluation</a>).
+    </p>
+    <p>
+      <a href="{{ url_for('webapp.investigate', q=question, limit=limit, all=1) }}">
+        Show the below-threshold matches anyway →</a>
+    </p>
+  </div>
 {% elif searched %}
+  {% if below_threshold %}
+    <div class="notice warn spaced">
+      These matches score below the calibrated evidence threshold — treat them
+      as leads, not support.
+    </div>
+  {% endif %}
   {% if graph_error %}
     <div class="notice warn spaced">
       Graph expansion is unavailable — showing vector evidence only.
@@ -57,11 +80,11 @@
     </div>
   {% else %}
     <p class="results-caption">
-      {{ rows | length }} evidence chunks ·
+      {{ rows | length }} evidence passages ·
       {{ graph_contributed }} contributed by graph expansion ·
       <a href="{{ url_for('webapp.graph', q=question, limit=limit) }}">view entity graph →</a>
     </p>
-    {% for row in rows %}
+    {% for row, flags in rows %}
       <article class="evidence-card">
         <header class="evidence-head">
           <span class="rank-chip">{{ row.rank }}</span>
@@ -70,6 +93,14 @@
             <span class="doc-type">{{ row.doc_type }}</span>
           </div>
           <div class="evidence-badges">
+            {% if flags.privileged %}
+              <span class="flag-pill priv" title="{{ flags.privilege_markers | join(' · ') }}">
+                potentially privileged</span>
+            {% endif %}
+            {% if flags.pii_types %}
+              <span class="flag-pill pii">PII: {{ flags.pii_types | join(', ') |
+                replace('_', ' ') }}</span>
+            {% endif %}
             {% for source in row.sources %}
               <span class="source-pill {{ source }}">{{ source }}</span>
             {% endfor %}
@@ -94,16 +125,13 @@
                 <li>
                   <strong>{{ item.entity_name }}</strong> —
                   <code>{{ item.relation }}</code> — this document
-                  <span class="mono-note">(relation source chunk
-                  {{ item.source_chunk_id[:12] }}… · evidence chunk
-                  {{ item.chunk_id[:12] }}…)</span>
                 </li>
               {% endfor %}
             </ul>
           </details>
         {% endif %}
         <footer class="evidence-cite">
-          document <code>{{ row.document_id }}</code> · chunk <code>{{ row.chunk_id }}</code>
+          {{ row.title }} · {{ row.doc_type }} · passage {{ row.sequence + 1 }}
         </footer>
       </article>
     {% endfor %}

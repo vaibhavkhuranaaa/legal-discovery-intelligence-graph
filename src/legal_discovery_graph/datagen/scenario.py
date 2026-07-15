@@ -63,6 +63,12 @@ class DraftDocument:
     body: str
     mentions: list[MentionSpan]
     events: list[DraftEvent] = field(default_factory=list)
+    privileged: bool = False  # gold label: attorney-client privileged / work product
+    pii_types: list[str] = field(default_factory=list)  # gold label: e.g. ["ssn"]
+
+
+#: Outside-counsel email domains for privilege detection (gold configuration).
+COUNSEL_DOMAINS = ("hartwellpace.example",)
 
 
 QUERY_CATEGORIES = ("entity", "relationship", "event", "document", "financial", "negative")
@@ -125,6 +131,15 @@ class Cast:
         self.kavanagh = make_entity(EntityType.PERSON, "ruth-kavanagh", "Ruth Kavanagh")
         self.ellison = make_entity(EntityType.PERSON, "robert-ellison", "Robert Ellison")
         self.whitfield = make_entity(EntityType.PERSON, "dana-whitfield", "Dana Whitfield")
+
+        # Outside counsel (appears only in privileged documents, not in noise).
+        self.pace = make_entity(EntityType.PERSON, "laura-pace", "Laura Pace")
+        self.hartwell_pace = make_entity(
+            EntityType.ORGANIZATION,
+            "hartwell-pace",
+            "Hartwell & Pace LLP",
+            ("Hartwell & Pace",),
+        )
 
         self.contract_value = money_entity(2_400_000)
         self.apex_bid = money_entity(1_800_000)
@@ -679,6 +694,9 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
                 entities=[cast.sharma, cast.northgate, cast.crestline, cast.reyes],
             )
         ],
+        # The memo header declares "PRIVILEGED AND CONFIDENTIAL" — gold-labeled
+        # accordingly (found by the flags evaluation, ADR-0020).
+        privileged=True,
     )
     docs.append(audit_memo)
 
@@ -1156,6 +1174,184 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
     )
     docs.append(demand_letter)
 
+    # 35. ACH vendor authorization (bank PII) — Apr 14, 2023
+    c = Composer()
+    c.text("VENDOR ACH AUTHORIZATION — ").mention(cast.northgate).para()
+    c.text("Date: ").mention(date_entity(dt(2023, 4, 14))).line()
+    c.text("Prepared by: Accounts Payable, ").mention(cast.meridian).para()
+    c.text("Vendor: ").mention(cast.northgate).text(", ").mention(cast.reno).line()
+    c.text("Remit-to: account number 0004482913 · routing number 123456789.").para()
+    c.text("This authorization was executed by ").mention(cast.tran)
+    c.text(", Principal of ").mention(cast.northgate, "Northgate")
+    c.text(", and covers all invoices submitted under the ").mention(cast.falcon)
+    c.text(" master supply agreement.")
+    ach_auth = DraftDocument(
+        doc_type=DocumentType.MEMO,
+        title="Vendor ACH authorization — Northgate Supply Solutions",
+        custodian="Accounts Payable",
+        sent_at=dt(2023, 4, 14, 9, 45),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 4, 14),
+                description=(
+                    "Northgate ACH payment authorization executed for Project Falcon "
+                    "invoicing"
+                ),
+                entities=[cast.tran, cast.northgate, cast.falcon],
+            )
+        ],
+        pii_types=["bank_account", "routing_number"],
+    )
+    docs.append(ach_auth)
+
+    # 36. Litigation hold notice (privileged) — Nov 8, 2023
+    c = Composer()
+    c.text("PRIVILEGED AND CONFIDENTIAL — ATTORNEY WORK PRODUCT").para()
+    c.text("LITIGATION HOLD NOTICE — ").mention(cast.meridian).para()
+    c.text("Date: ").mention(date_entity(dt(2023, 11, 8))).line()
+    c.text("From: ").mention(cast.ellison).text(", General Counsel").line()
+    c.text("Distribution: ").mention(cast.webb).text(", ").mention(cast.sharma)
+    c.text(", department heads").para()
+    c.text("Effective immediately, a litigation hold is placed on all documents, ")
+    c.text("communications, and financial records relating to ").mention(cast.falcon)
+    c.text(", ").mention(cast.northgate).text(", and ").mention(cast.crestline)
+    c.text(". Routine deletion schedules for the affected mailboxes and shares must ")
+    c.text("stop. Do not alter or discard any record within the scope of this notice. ")
+    c.text("Questions go to the Legal Department.")
+    lit_hold = DraftDocument(
+        doc_type=DocumentType.MEMO,
+        title="Litigation hold notice — Project Falcon records",
+        custodian="Legal Department",
+        sent_at=dt(2023, 11, 8, 8, 50),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 11, 8),
+                description=(
+                    "Legal places a litigation hold on all Project Falcon, Northgate, "
+                    "and Crestline records"
+                ),
+                entities=[cast.ellison, cast.meridian, cast.falcon],
+            )
+        ],
+        privileged=True,
+    )
+    docs.append(lit_hold)
+
+    # 37. Engagement of outside counsel (privileged) — Nov 9, 2023
+    c = Composer()
+    _email_header(
+        c,
+        cast.ellison,
+        "r.ellison@meridian-aero.example",
+        cast.pace,
+        "lpace@hartwellpace.example",
+        dt(2023, 11, 9),
+        "Engagement — privileged and confidential",
+    )
+    c.mention(cast.pace, "Laura Pace").text(" — further to our call, ")
+    c.mention(cast.meridian, "Meridian").text(" has opened engagement with ")
+    c.mention(cast.hartwell_pace).text(" to advise the company in connection with ")
+    c.text("internal audit IA-2023-19. This request is made for the purpose of seeking ")
+    c.text("legal advice regarding potential claims and employee matters; please treat ")
+    c.text("this thread as privileged and confidential. My office will send the audit ")
+    c.text("workpapers under separate cover. — ").mention(cast.ellison, "Robert Ellison")
+    engagement = DraftDocument(
+        doc_type=DocumentType.EMAIL,
+        title="Engagement — privileged and confidential",
+        custodian="Robert Ellison",
+        sent_at=dt(2023, 11, 9, 9, 20),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 11, 9),
+                description=(
+                    "Meridian engages outside counsel Hartwell & Pace to advise on the "
+                    "audit findings"
+                ),
+                entities=[cast.ellison, cast.pace, cast.hartwell_pace],
+            )
+        ],
+        privileged=True,
+    )
+    docs.append(engagement)
+
+    # 38. Outside counsel reply (privileged) — Nov 13, 2023
+    c = Composer()
+    _email_header(
+        c,
+        cast.pace,
+        "lpace@hartwellpace.example",
+        cast.ellison,
+        "r.ellison@meridian-aero.example",
+        dt(2023, 11, 13),
+        "Re: Engagement — privileged and confidential",
+    )
+    c.text("ATTORNEY-CLIENT PRIVILEGED — ATTORNEY WORK PRODUCT").para()
+    c.mention(cast.ellison, "Robert").text(" — our team met with ")
+    c.mention(cast.sharma).text(" and the internal audit staff this morning to review ")
+    c.text("the IA-2023-19 workpapers. We recommend scheduling interviews with the ")
+    c.text("procurement staff before year end and preserving the personal devices ")
+    c.text("identified by Information Security. Our preliminary assessment of the ")
+    c.text("company's civil recovery options will follow in a separate privileged ")
+    c.text("memorandum. — ").mention(cast.pace, "Laura Pace").text(", ")
+    c.mention(cast.hartwell_pace, "Hartwell & Pace")
+    counsel_reply = DraftDocument(
+        doc_type=DocumentType.EMAIL,
+        title="Re: Engagement — privileged and confidential",
+        custodian="Robert Ellison",
+        sent_at=dt(2023, 11, 13, 16, 5),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 11, 13),
+                description=(
+                    "Outside counsel meets with internal audit to plan the "
+                    "investigation interviews"
+                ),
+                entities=[cast.pace, cast.sharma, cast.hartwell_pace],
+            )
+        ],
+        privileged=True,
+    )
+    docs.append(counsel_reply)
+
+    # 39. Personnel file record of the Nov 15 leave action (SSN PII)
+    c = Composer()
+    c.text("PERSONNEL ACTION RECORD — ").mention(cast.meridian).text(" — CONFIDENTIAL").para()
+    c.text("Employee: ").mention(cast.reyes).text(", Director of Procurement").line()
+    c.text("Employee ID: E-20117 · SSN 900-12-3456").line()
+    c.text("Date: ").mention(date_entity(dt(2023, 11, 15))).para()
+    c.text("Action: ").mention(cast.reyes, "D. Reyes")
+    c.text(" is placed on paid administrative leave pending the outcome of internal ")
+    c.text("audit IA-2023-19 and the related legal review, per the personnel action ")
+    c.text("notice circulated separately. Expense reimbursements are held during the ")
+    c.text("leave period. Access credentials were addressed by Information Security.")
+    hr_record = DraftDocument(
+        doc_type=DocumentType.MEMO,
+        title="Personnel action record — administrative leave",
+        custodian="Human Resources",
+        sent_at=dt(2023, 11, 15, 13, 40),
+        body=c.build(),
+        mentions=c.spans,
+        events=[
+            DraftEvent(
+                occurred_at=dt(2023, 11, 15),
+                description=(
+                    "HR records Daniel Reyes's administrative leave in his personnel file"
+                ),
+                entities=[cast.reyes, cast.meridian],
+            )
+        ],
+        pii_types=["ssn"],
+    )
+    docs.append(hr_record)
+
     queries = [
         # --- entity lookup ---
         DraftQuery(
@@ -1339,6 +1535,37 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
         ),
         DraftQuery(
             "Did Apex Components file a bid protest after losing RFP-2023-011?",
+            "negative",
+            [],
+        ),
+        DraftQuery(
+            "What penalties did the Department of Justice impose on Meridian Aerospace?",
+            "negative",
+            [],
+        ),
+        DraftQuery(
+            "Did Marcus Webb resign from Meridian Aerospace Systems?",
+            "negative",
+            [],
+        ),
+        DraftQuery(
+            "Which whistleblower hotline complaints were filed about Project Falcon?",
+            "negative",
+            [],
+        ),
+        DraftQuery(
+            "What insurance claims did Meridian file to recover the Project Falcon losses?",
+            "negative",
+            [],
+        ),
+        DraftQuery(
+            "Which board members voted against funding Project Falcon?",
+            "negative",
+            [],
+        ),
+        DraftQuery(
+            "Had Crestline Holdings been used in earlier kickback arrangements before "
+            "Project Falcon?",
             "negative",
             [],
         ),

@@ -47,7 +47,27 @@ def test_corpus_size_and_types(result: tuple[BootstrapResult, Path]) -> None:
     documents = [document for document, _ in bootstrap.bundle.documents]
     assert 400 <= len(documents) <= 550
     present_types = {document.doc_type for document in documents}
-    assert present_types == set(DocumentType)
+    # The synthetic generator produces exactly these types; DocumentType may
+    # grow additional members for real-file ingestion (e.g. OTHER).
+    assert present_types == {
+        DocumentType.EMAIL,
+        DocumentType.CONTRACT,
+        DocumentType.MEMO,
+        DocumentType.INVOICE,
+        DocumentType.MEETING_NOTES,
+    }
+
+
+def test_privilege_pii_gold_covers_every_document(result: tuple[BootstrapResult, Path]) -> None:
+    bootstrap, data_dir = result
+    gold = json.loads((data_dir / "labels" / "privilege_pii.json").read_text(encoding="utf-8"))
+    assert gold["counsel_domains"]  # detector configuration ships with the labels
+    document_ids = {document.document_id for document, _ in bootstrap.bundle.documents}
+    assert set(gold["documents"]) == document_ids  # a label (mostly negative) for every doc
+    privileged = [d for d in gold["documents"].values() if d["privileged"]]
+    with_pii = [d for d in gold["documents"].values() if d["pii_types"]]
+    assert len(privileged) >= 3
+    assert len(with_pii) >= 2
 
 
 def test_mention_offsets_match_document_text(result: tuple[BootstrapResult, Path]) -> None:

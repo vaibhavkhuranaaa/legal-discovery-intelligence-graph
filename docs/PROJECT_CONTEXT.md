@@ -1,7 +1,7 @@
 # Project Context — Read This First In A New Session
 
 Self-contained handoff for the **Legal Discovery Intelligence Graph**. Contains only verified
-current state — no aspirations. Last verified: 2026-07-15 (Milestone 9 completion).
+current state — no aspirations. Last verified: 2026-07-15 (Milestone 10 completion).
 
 ## What This Project Is
 
@@ -15,7 +15,7 @@ Streamlit dashboard on Community Cloud. Full design: `product.md`, `architecture
 **Repository:** `github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph` (public).
 CI (GitHub Actions): `uv sync --frozen`, `ruff check`, `pytest` on pushes/PRs to `main`.
 
-## Current Status: Milestones 0–9 complete
+## Current Status: Milestones 0–10 complete
 
 **Milestone 7 — Flask product web UI (done):** `webapp/` package (ADR-0013):
 Flask app factory + blueprint, four server-rendered Jinja pages (Investigate, Entity graph,
@@ -45,6 +45,22 @@ IDs corrupting evaluation) and fixed. All metrics re-measured 2026-07-15: extrac
 hit@5 0.500 → 0.833 (k=5 entity/financial dip measured and documented). Product UI (ADR-0017):
 cytoscape.js entity graph (pinned vendored asset) with provenance click-through, month-grouped
 timeline rail, evaluation page led by the transparent total model score (0.963). 116 tests.
+
+**Milestone 10 — eDiscovery readiness (done):** Client-safe citations (ADR-0018: no hash IDs
+on investigator pages; title · type · passage instead). Calibrated evidence refusal
+(ADR-0019: 10 negative queries, measured threshold 0.5089 → `REFUSAL_THRESHOLD` default,
+refusal page with override; 7/10 negatives refused / 2/28 false refusals). Privilege & PII
+flags (ADR-0020: `review/flags.py`, gold `privilege_pii.json`, `evaluate_flags.py` — 1.0 on
+clean text; caught one gold-label error). Real-file ingestion (ADR-0021:
+`ingestion/readers/` for PDF/DOCX/EML, `scripts/ingest_files.py` — SHA-256 dedup, Bates
+numbers, `data/manifest.jsonl` chain of custody; `DocumentType.OTHER` added). Search audit
+trail (ADR-0022: append-only `audit_log` table, best-effort writes, `/audit` page). Corpus
+generator v3: 455 docs / 456 chunks / 2,223 mentions / 30 events / 38 queries; outside
+counsel cast (Hartwell & Pace LLP). Re-measured 2026-07-15: extraction micro F1 0.887
+strict; hybrid R@10 0.857 / hit@10 0.893 — **graph expansion now hurts @10 on the denser
+corpus** (documented in DATA_AND_EVALUATION.md); total model score 0.909. Free-tier limits +
+paid path in `docs/SCALING.md`; `keep-alive.yml` pings Render every 10 min and both DBs
+daily. 169 tests passing.
 
 **Milestone 0 — Foundation (done):** uv-managed Python 3.12 project (Hatchling, src layout),
 Ruff/pytest baseline, `config.py` (settings singleton), `models.py` (shared-ID Pydantic

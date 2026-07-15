@@ -11,7 +11,8 @@ public deployment (Milestone 8). `roadmap.md` is the current implementation reco
 
 ```
 Synthetic discovery documents (scripts/bootstrap_data.py → data/raw/)
-        │
+Real files: PDF/DOCX/EML (scripts/ingest_files.py → readers, SHA-256 dedup,
+        │   Bates numbers, chain-of-custody manifest — ADR-0021)
         ▼
 Ingestion (src/.../ingestion) ── parse, normalize, chunk ──► data/processed/
         │
@@ -46,9 +47,10 @@ Evaluation (src/.../evaluation) — precision/recall/F1 vs gold labels (data/lab
 | `extraction/` | Entity/mention/event extraction (spaCy + regex), entity resolution |
 | `retrieval/` | Embedding, pgvector search, LangChain orchestration of vector + graph retrieval |
 | `graph/` | Neo4j driver boundary: schema constraints, loading, Cypher query API |
-| `evaluation/` | Gold-label scoring: extraction and retrieval precision/recall/F1 |
+| `evaluation/` | Gold-label scoring: extraction and retrieval precision/recall/F1, refusal-threshold calibration (ADR-0019) |
+| `review/` | Rule-based privilege/PII flags (`flags.py`, ADR-0020) — pure functions, badged on evidence cards, measured by `scripts/evaluate_flags.py` |
 | `ui/` | Presentation core + Streamlit app: `backend.py` (only data boundary; explicit outcome objects) → pure `presenters.py`/`figures.py` → `streamlit_app.py` (wiring + caching only) — ADR-0012 |
-| `webapp/` | Flask product UI (ADR-0013): routes + Jinja templates + CSS design system over the unchanged `ui/` core; stateless GET-param searches; plotly.js served from the installed package |
+| `webapp/` | Flask product UI (ADR-0013): routes + Jinja templates + CSS design system over the unchanged `ui/` core; stateless GET-param searches; plotly.js served from the installed package; calibrated refusal state (ADR-0019), privilege/PII badges (ADR-0020), `/audit` trail (ADR-0022); client-safe citations only (ADR-0018) |
 | `config.py` | Single settings accessor (`get_settings()`); the only env-var boundary |
 | `models.py` | Pydantic contracts shared across all subsystems; shared IDs across both stores |
 

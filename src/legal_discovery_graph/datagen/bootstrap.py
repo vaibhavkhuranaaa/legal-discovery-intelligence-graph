@@ -16,11 +16,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from legal_discovery_graph.datagen.generator import CorpusBundle, generate_corpus
+from legal_discovery_graph.datagen.scenario import COUNSEL_DOMAINS
 from legal_discovery_graph.ids import stable_id
 from legal_discovery_graph.ingestion.pipeline import IngestionReport, process_raw_dir
 from legal_discovery_graph.models import Chunk, Entity, EntityMention, Event
 
-GENERATOR_VERSION = "2"  # v2: informal name references and incidental locations gold-labeled
+GENERATOR_VERSION = "3"  # v3: privileged/PII planted documents and gold flags; 10 negative queries
 
 
 @dataclass
@@ -155,6 +156,23 @@ def _write_labels(
     _dump_jsonl(retrieval_labels, labels_dir / "retrieval.jsonl")
 
 
+def _write_privilege_labels(labels_dir: Path, bundle: CorpusBundle) -> None:
+    """Gold privilege/PII flags for every document (mostly negatives)."""
+    _dump(
+        {
+            "counsel_domains": list(COUNSEL_DOMAINS),
+            "documents": {
+                document.document_id: {
+                    "privileged": draft.privileged,
+                    "pii_types": sorted(draft.pii_types),
+                }
+                for document, draft in bundle.documents
+            },
+        },
+        labels_dir / "privilege_pii.json",
+    )
+
+
 def run_bootstrap(seed: int, data_dir: Path) -> BootstrapResult:
     """Generate the corpus and all derived outputs under `data_dir`."""
     raw_dir = data_dir / "raw"
@@ -179,6 +197,7 @@ def run_bootstrap(seed: int, data_dir: Path) -> BootstrapResult:
         )
     entities, mentions, events, retrieval_labels = _resolve_labels(bundle, ingestion.chunks)
     _write_labels(labels_dir, entities, mentions, events, retrieval_labels)
+    _write_privilege_labels(labels_dir, bundle)
     return BootstrapResult(
         bundle=bundle,
         ingestion=ingestion,

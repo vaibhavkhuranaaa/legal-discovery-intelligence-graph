@@ -6,7 +6,7 @@
   <h1>Timeline</h1>
   <p class="lede">
     Chronology of events extracted from the corpus and loaded into the graph —
-    each event cites the document and chunk that evidence it.
+    each event cites the document that evidences it.
   </p>
 </div>
 
@@ -40,8 +40,7 @@
                 </div>
               {% endif %}
               <footer class="rail-cite">
-                {{ event.document }} · <code>{{ event.document_id[:12] }}…</code>
-                · chunk <code>{{ event.chunk_id[:12] }}…</code>
+                {{ event.document }}
               </footer>
             </div>
           </article>
@@ -51,13 +50,12 @@
   </div>
 
   <details class="table-fallback">
-    <summary>Table view — every event with its full citation</summary>
+    <summary>Table view — every event with its citation</summary>
     <div class="table-scroll">
       <table class="data-table">
         <thead>
           <tr>
-            <th>Date</th><th>Description</th><th>Entities</th>
-            <th>Document</th><th>Document ID</th><th>Chunk ID</th>
+            <th>Date</th><th>Description</th><th>Entities</th><th>Document</th>
           </tr>
         </thead>
         <tbody>
@@ -67,8 +65,6 @@
               <td>{{ row.description }}</td>
               <td>{{ row.entities }}</td>
               <td>{{ row.document }}</td>
-              <td class="mono">{{ row.document_id }}</td>
-              <td class="mono">{{ row.chunk_id }}</td>
             </tr>
           {% endfor %}
         </tbody>

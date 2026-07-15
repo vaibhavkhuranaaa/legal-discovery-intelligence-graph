@@ -24,8 +24,8 @@ def cytoscape_elements(elements: GraphElements) -> list[dict]:
     """GraphElements → cytoscape.js element dicts (nodes then edges).
 
     Nothing is invented here: every node and edge comes from an
-    evidence-backed :class:`GraphEvidence` row, and each edge carries its
-    provenance chunk IDs for display.
+    evidence-backed :class:`GraphEvidence` row. Internal chunk IDs stay in
+    the data layer — edge detail shows the relation and document title only.
     """
     degree: Counter[str] = Counter()
     for edge in elements.edges:
@@ -49,8 +49,6 @@ def cytoscape_elements(elements: GraphElements) -> list[dict]:
                 "source": edge.entity_id,
                 "target": edge.document_id,
                 "relation": _RELATION_LABELS.get(edge.relation, edge.relation),
-                "chunk": edge.chunk_id[:12],
-                "source_chunk": edge.source_chunk_id[:12],
             }
         }
         for edge in elements.edges

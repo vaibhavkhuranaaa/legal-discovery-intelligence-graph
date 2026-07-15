@@ -1,43 +1,43 @@
 {
   "corpus": {
-    "documents": 450,
-    "gold_mentions": 2189,
-    "predicted_mentions": 2112,
-    "resolved_entities": 371,
+    "documents": 455,
+    "gold_mentions": 2223,
+    "predicted_mentions": 2148,
+    "resolved_entities": 377,
     "seed": 42
   },
   "events": {
     "f1": 1.0,
-    "gold": 25,
+    "gold": 30,
     "precision": 1.0,
-    "predicted": 25,
+    "predicted": 30,
     "recall": 1.0,
-    "true_positives": 25
+    "true_positives": 30
   },
   "mentions_relaxed": {
     "date": {
       "f1": 1.0,
-      "gold": 451,
+      "gold": 456,
       "precision": 1.0,
-      "predicted": 451,
+      "predicted": 456,
       "recall": 1.0,
-      "true_positives": 451
+      "true_positives": 456
     },
     "location": {
-      "f1": 0.7094,
-      "gold": 83,
-      "precision": 0.5497,
-      "predicted": 151,
+      "f1": 0.7089,
+      "gold": 84,
+      "precision": 0.549,
+      "predicted": 153,
       "recall": 1.0,
-      "true_positives": 83
+      "true_positives": 84
     },
     "micro": {
-      "f1": 0.8993,
-      "gold": 2189,
-      "precision": 0.9157,
-      "predicted": 2112,
-      "recall": 0.8835,
-      "true_positives": 1934
+      "f1": 0.8991,
+      "gold": 2223,
+      "precision": 0.9148,
+      "predicted": 2148,
+      "recall": 0.8839,
+      "true_positives": 1965
     },
     "money": {
       "f1": 1.0,
@@ -48,54 +48,54 @@
       "true_positives": 83
     },
     "organization": {
-      "f1": 0.7266,
-      "gold": 259,
-      "precision": 0.6583,
-      "predicted": 319,
-      "recall": 0.8108,
-      "true_positives": 210
+      "f1": 0.7267,
+      "gold": 270,
+      "precision": 0.6606,
+      "predicted": 330,
+      "recall": 0.8074,
+      "true_positives": 218
     },
     "person": {
-      "f1": 0.9127,
-      "gold": 1288,
-      "precision": 0.9991,
-      "predicted": 1083,
-      "recall": 0.8401,
-      "true_positives": 1082
+      "f1": 0.9134,
+      "gold": 1303,
+      "precision": 0.9982,
+      "predicted": 1099,
+      "recall": 0.8419,
+      "true_positives": 1097
     },
     "project": {
       "f1": 1.0,
-      "gold": 25,
+      "gold": 27,
       "precision": 1.0,
-      "predicted": 25,
+      "predicted": 27,
       "recall": 1.0,
-      "true_positives": 25
+      "true_positives": 27
     }
   },
   "mentions_strict": {
     "date": {
       "f1": 1.0,
-      "gold": 451,
+      "gold": 456,
       "precision": 1.0,
-      "predicted": 451,
+      "predicted": 456,
       "recall": 1.0,
-      "true_positives": 451
+      "true_positives": 456
     },
     "location": {
-      "f1": 0.7094,
-      "gold": 83,
-      "precision": 0.5497,
-      "predicted": 151,
+      "f1": 0.7089,
+      "gold": 84,
+      "precision": 0.549,
+      "predicted": 153,
       "recall": 1.0,
-      "true_positives": 83
+      "true_positives": 84
     },
     "micro": {
-      "f1": 0.8877,
-      "gold": 2189,
-      "precision": 0.9039,
-      "predicted": 2112,
-      "recall": 0.8721,
-      "true_positives": 1909
+      "f1": 0.8868,
+      "gold": 2223,
+      "precision": 0.9022,
+      "predicted": 2148,
+      "recall": 0.8718,
+      "true_positives": 1938
     },
     "money": {
       "f1": 1.0,
@@ -106,28 +106,28 @@
       "true_positives": 83
     },
     "organization": {
-      "f1": 0.6436,
-      "gold": 259,
-      "precision": 0.5831,
-      "predicted": 319,
-      "recall": 0.7181,
-      "true_positives": 186
+      "f1": 0.6433,
+      "gold": 270,
+      "precision": 0.5848,
+      "predicted": 330,
+      "recall": 0.7148,
+      "true_positives": 193
     },
     "person": {
-      "f1": 0.9119,
-      "gold": 1288,
-      "precision": 0.9982,
-      "predicted": 1083,
-      "recall": 0.8393,
-      "true_positives": 1081
+      "f1": 0.9117,
+      "gold": 1303,
+      "precision": 0.9964,
+      "predicted": 1099,
+      "recall": 0.8404,
+      "true_positives": 1095
     },
     "project": {
       "f1": 1.0,
-      "gold": 25,
+      "gold": 27,
       "precision": 1.0,
-      "predicted": 25,
+      "predicted": 27,
       "recall": 1.0,
-      "true_positives": 25
+      "true_positives": 27
     }
   },
   "ner_model": "en_core_web_sm-3.8.0 (pinned in pyproject.toml)",

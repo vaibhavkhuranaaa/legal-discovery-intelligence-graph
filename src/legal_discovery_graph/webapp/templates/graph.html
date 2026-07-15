@@ -103,8 +103,8 @@
           detail.hidden = false;
           detail.innerHTML =
             "<strong>" + src + "</strong> — " + d.relation + " — <strong>" + tgt +
-            "</strong><br><span class='mono-note'>evidence chunk " + d.chunk +
-            "… · relation source chunk " + d.source_chunk + "…</span>";
+            "</strong><br><span class='mono-note'>stored, evidence-backed relation" +
+            " from the graph</span>";
         });
         cy.on("tap", "node", (evt) => {
           const d = evt.target.data();

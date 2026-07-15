@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Audit trail — Legal Discovery Intelligence Graph{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="eyebrow">Defensibility</p>
+  <h1>Audit trail</h1>
+  <p class="lede">
+    Every investigation search is recorded — what was asked, when, how many
+    passages were returned, and whether the calibrated evidence threshold
+    refused the question. Rows are append-only in PostgreSQL.
+  </p>
+</div>
+
+{% if audit_error %}
+  <div class="notice warn">
+    The audit trail could not be read: {{ audit_error }}
+  </div>
+{% elif not rows %}
+  <div class="notice">
+    No searches have been recorded yet — run an investigation on the
+    <a href="{{ url_for('webapp.investigate') }}">Investigate</a> page.
+  </div>
+{% else %}
+  <p class="results-caption tight">
+    {{ rows | length }} most recent searches · user identity is recorded once
+    authentication exists (documented limitation)
+  </p>
+  <div class="panel">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Searched at (UTC)</th><th>Question</th>
+            <th class="num">Limit</th><th class="num">Results</th>
+            <th>Outcome</th><th class="num">Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="mono">{{ row.searched_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+              <td>{{ row.question }}</td>
+              <td class="num mono">{{ row.result_limit }}</td>
+              <td class="num mono">{{ row.result_count }}</td>
+              <td>
+                {%- if row.refused %}refused (below threshold)
+                {%- elif not row.graph_available %}vector only (graph down)
+                {%- else %}evidence shown{% endif -%}
+              </td>
+              <td class="num mono">{{ row.duration_ms }} ms</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

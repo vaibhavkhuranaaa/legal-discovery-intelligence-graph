@@ -43,6 +43,17 @@ class Settings(BaseSettings):
     embedding_model_name: str = _DEFAULT_EMBEDDING_MODEL
     embedding_backend: str = "torch"
 
+    # Evidence refusal: searches whose top-1 cosine similarity falls below
+    # this threshold render an explicit "no supporting evidence" state instead
+    # of best-effort matches. The default is the max-accuracy threshold
+    # measured by scripts/evaluate_retrieval.py on the seed-42 corpus
+    # (ADR-0019); 0 disables refusal.
+    refusal_threshold: float = 0.5089
+
+    # Comma-separated outside-counsel email domains for privilege flagging
+    # (matter-specific configuration; the synthetic matter's is the default).
+    counsel_domains: str = "hartwellpace.example"
+
     # Application behavior
     app_env: str = "development"
     log_level: str = "INFO"

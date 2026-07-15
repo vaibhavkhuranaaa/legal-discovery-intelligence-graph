@@ -134,3 +134,19 @@ vertical timeline rail with entity chips and citations, and an evaluation page l
 transparent total model score (mean of the four headline metrics — 0.963) with detail tables
 collapsed. Verified locally against live Supabase + AuraDB and re-deployed to Render.
 116 tests passing.
+
+## Milestone 10 — eDiscovery readiness ✅
+
+Client-safe citations (ADR-0018): investigator pages cite title · type · passage — internal
+hash IDs never render. Calibrated evidence refusal (ADR-0019): 10 negative gold queries
+(from 4), max-accuracy top-1 cosine threshold 0.5089 measured by `evaluate_retrieval.py`
+(7/10 negatives refused, 2/28 false refusals), explicit "no supporting evidence" state with
+override. Privilege/PII flags (ADR-0020): `review/flags.py` rules + gold
+`privilege_pii.json` + `evaluate_flags.py` (P/R/F1 1.0 on clean synthetic text; one
+gold-label error found and fixed). Real-file ingestion (ADR-0021): PDF/DOCX/EML readers,
+`ingest_files.py` with SHA-256 dedup, Bates numbers, chain-of-custody manifest. Search audit
+trail (ADR-0022): append-only `audit_log` in PostgreSQL + `/audit` page. Corpus v3: 455
+documents, 30 events, 38 queries; all metrics re-measured honestly — hybrid @10 now *loses*
+to vector-only on the denser graph (hit@10 0.929 → 0.893; total model score 0.909), recorded
+as a real interleaving finding, not tuned away. Free-tier limits documented in
+`docs/SCALING.md` with a keep-alive workflow. 169 tests passing.

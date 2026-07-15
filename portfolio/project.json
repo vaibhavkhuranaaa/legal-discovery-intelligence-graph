@@ -31,17 +31,20 @@
     "runtime": "Flask + gunicorn"
   },
   "metrics": [
-    "Entity extraction F1 0.889 strict",
-    "Graph retrieval R@5 0.929",
-    "Graph relationship hit@5 0.833"
+    "Entity extraction F1 0.887 strict",
+    "Hybrid retrieval R@10 0.857",
+    "Graph relationship hit@5 0.833",
+    "Refusal accuracy 0.868 (calibrated)",
+    "Privilege/PII flags F1 1.0 (synthetic)"
   ],
   "stages": [
     "Synthetic corpus generation",
+    "Real-file ingestion (PDF/DOCX/EML)",
     "Entity and event extraction",
     "Vector indexing",
     "Graph loading",
-    "Hybrid retrieval",
-    "Flask web delivery"
+    "Hybrid retrieval with calibrated refusal",
+    "Flask web delivery with audit trail"
   ],
   "architecture": [
     "Discovery corpus",

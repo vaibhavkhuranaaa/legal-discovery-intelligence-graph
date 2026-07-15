@@ -95,6 +95,59 @@ def _macro_scores(
     return scores
 
 
+def calibrate_refusal_threshold(
+    queries: Sequence[GoldQuery],
+    results: Mapping[str, Sequence[RankedHit]],
+) -> dict | None:
+    """Pick the max-accuracy refusal threshold over top-1 scores.
+
+    The rule under evaluation is "refuse when the top-1 score is below the
+    threshold". Candidates are midpoints between adjacent distinct top-1
+    scores (plus one below the minimum and one above the maximum); the
+    candidate with the highest classification accuracy wins, ties broken by
+    the larger margin to the nearest observed score. Only meaningful for the
+    vector leg, whose scores are cosine similarities. Returns ``None`` when
+    either class is empty.
+    """
+    labeled = [
+        (results[query.query_id][0].score, query.is_answerable)
+        for query in queries
+        if results[query.query_id]
+    ]
+    answerable_scores = sorted(score for score, ok in labeled if ok)
+    negative_scores = sorted(score for score, ok in labeled if not ok)
+    if not answerable_scores or not negative_scores:
+        return None
+
+    distinct = sorted({score for score, _ in labeled})
+    candidates = (
+        [distinct[0] - 0.01]
+        + [(low + high) / 2 for low, high in zip(distinct, distinct[1:], strict=False)]
+        + [distinct[-1] + 0.01]
+    )
+
+    def outcome(threshold: float) -> tuple[int, float]:
+        correct = sum(1 for score, ok in labeled if (score >= threshold) == ok)
+        margin = min(abs(score - threshold) for score, _ in labeled)
+        return correct, margin
+
+    best = max(candidates, key=lambda t: (*outcome(t), -t))
+    correct, _ = outcome(best)
+    refused_negatives = sum(1 for score in negative_scores if score < best)
+    false_refusals = sum(1 for score in answerable_scores if score < best)
+    return {
+        "rule": "refuse when top-1 cosine similarity < threshold",
+        "threshold": round(best, 4),
+        "accuracy": round(correct / len(labeled), 4),
+        "negatives_refused": refused_negatives,
+        "negatives_total": len(negative_scores),
+        "false_refusals": false_refusals,
+        "answerable_total": len(answerable_scores),
+        "answerable_top1_min": round(answerable_scores[0], 4),
+        "negative_top1_max": round(negative_scores[-1], 4),
+    }
+
+
 def score_retrieval(
     queries: Sequence[GoldQuery],
     results: Mapping[str, Sequence[RankedHit]],

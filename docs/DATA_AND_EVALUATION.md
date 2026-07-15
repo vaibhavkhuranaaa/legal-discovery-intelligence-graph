@@ -12,13 +12,14 @@ corpus (byte-identical per seed, regression-tested):
 
 - The fictional **"Project Falcon" procurement-fraud scenario**: a procurement director steers
   an avionics contract to a shell vendor in exchange for kickbacks routed through a holding
-  company, until an internal audit unravels it (`datagen/scenario.py`) — 21 planted evidence
-  documents plus ~90 routine noise documents (facilities notices, unrelated invoices, routine
-  memos) so retrieval is non-trivial.
-- At the default seed 42: **450 documents** (274 emails, 71 invoices, 65 memos, 39 meeting
-  notes, 1 contract), 451 chunks, 2,189 gold mentions, 25 events, **32 gold queries**
-  (generator v2: informal name references like "Daniel," / "Mr. Reyes" and incidental
-  locations are gold-labeled too, so NER is not penalized for finding them).
+  company, until an internal audit unravels it (`datagen/scenario.py`) — 39 planted evidence
+  documents (including privileged outside-counsel correspondence and PII-bearing records,
+  generator v3/ADR-0020) plus 416 routine noise documents (facilities notices, unrelated
+  invoices, routine memos) so retrieval is non-trivial.
+- At the default seed 42: **455 documents** (276 emails, 71 invoices, 68 memos, 39 meeting
+  notes, 1 contract), 456 chunks, 2,223 gold mentions, 30 events, **38 gold queries**
+  (generator v2 labeled informal name references like "Daniel," / "Mr. Reyes" and incidental
+  locations too, so NER is not penalized for finding them).
 - All names, organizations, amounts, and events are fictional; email domains use `.example`
   (see `product.md`, synthetic-data policy).
 - Mechanics of determinism and label exactness (uuid5 IDs, composer offset tracking): ADR-0008.
@@ -32,11 +33,14 @@ Emitted at generation time, because the generator knows exactly what it planted:
    surface text, and document-level character offsets (`body[start:end] == surface`,
    regression-tested).
 3. **`events.jsonl`** — dated events with involved entity IDs and the evidencing document.
-4. **`retrieval.jsonl`** — 32 investigative questions, each with a `category` (5 entity-lookup,
-   6 relationship, 7 event/timeline, 5 document-evidence, 5 financial/invoice, 4 negative), an
+4. **`retrieval.jsonl`** — 38 investigative questions, each with a `category` (5 entity-lookup,
+   6 relationship, 7 event/timeline, 5 document-evidence, 5 financial/invoice, 10 negative), an
    `is_answerable` flag, and the relevant document IDs, chunk IDs, and planted evidence
-   snippets those chunks contain. The 4 **negative queries** have empty relevant sets by
-   design — they score refusal/no-evidence behavior in later milestones.
+   snippets those chunks contain. The 10 **negative queries** have empty relevant sets by
+   design — they calibrate and score the refusal/no-evidence behavior (ADR-0019).
+5. **`privilege_pii.json`** — a privilege/PII label for every document (mostly negatives):
+   `privileged` boolean and `pii_types` list, plus the outside-counsel domains the detector
+   needs. Scored by `scripts/evaluate_flags.py` (ADR-0020).
 
 **Label completeness is regression-tested:** every occurrence of a canonical entity name or
 alias in any document body must be covered by a gold mention span of that same entity with
@@ -59,7 +63,7 @@ overlap):
 Both strict (exact span) and relaxed (overlap) matching are reported; matching is one-to-one
 greedy within each (document, entity type) group.
 
-**Measured results (450-document corpus, re-measured 2026-07-15; original Milestone 2 run on
+**Measured results (455-document corpus, re-measured 2026-07-15; original Milestone 2 run on
 the 111-document corpus scored micro F1 0.889 strict / 0.903 relaxed)** — reproduce with
 `uv run python scripts/bootstrap_data.py && uv run python scripts/evaluate_extraction.py`
 (seed 42, spaCy `en_core_web_sm` 3.8.0 pinned; full breakdown in
@@ -67,13 +71,13 @@ the 111-document corpus scored micro F1 0.889 strict / 0.903 relaxed)** — repr
 
 | Type | P (strict) | R (strict) | F1 (strict) | P (relaxed) | R (relaxed) | F1 (relaxed) |
 |---|---|---|---|---|---|---|
-| person | 0.998 | 0.839 | 0.912 | 0.999 | 0.840 | 0.913 |
-| organization | 0.583 | 0.718 | 0.644 | 0.658 | 0.811 | 0.727 |
+| person | 0.996 | 0.840 | 0.912 | 0.998 | 0.842 | 0.913 |
+| organization | 0.585 | 0.715 | 0.643 | 0.661 | 0.807 | 0.727 |
 | money | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
 | date | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
 | project | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
-| location | 0.550 | 1.000 | 0.709 | 0.550 | 1.000 | 0.709 |
-| **micro** | **0.904** | **0.872** | **0.888** | **0.916** | **0.883** | **0.899** |
+| location | 0.549 | 1.000 | 0.709 | 0.549 | 1.000 | 0.709 |
+| **micro** | **0.902** | **0.872** | **0.887** | **0.915** | **0.884** | **0.899** |
 | events (doc+date) | 1.000 | 1.000 | 1.000 | | | |
 
 **Honest reading of these numbers** (extraction design: ADR-0009):
@@ -108,36 +112,39 @@ evidence set):
   behavior: the system should refuse or return an explicit no-evidence state rather than
   presenting irrelevant chunks as support.
 
-#### Measured — vector-only (seed 42, 450-document corpus, run 2026-07-15)
+#### Measured — vector-only (seed 42, 455-document corpus, run 2026-07-15)
 
 `sentence-transformers/all-MiniLM-L6-v2` (normalized, 384-dim) over Supabase pgvector with an
-HNSW cosine index; 28 answerable + 4 negative queries, top-10 retrieved per query,
+HNSW cosine index; 28 answerable + 10 negative queries, top-10 retrieved per query,
 macro-averaged. Reproduce with `uv run python scripts/evaluate_retrieval.py` (full numbers in
 `artifacts/retrieval_metrics.json`).
 
 | scope | P@1 | R@1 | hit@1 | R@5 | hit@5 | R@10 | hit@10 |
 |---|---|---|---|---|---|---|---|
-| overall | 0.536 | 0.476 | 0.536 | 0.804 | 0.857 | 0.857 | 0.929 |
+| overall | 0.536 | 0.476 | 0.536 | 0.732 | 0.786 | 0.857 | 0.929 |
 | document | 0.400 | 0.400 | 0.400 | 1.000 | 1.000 | 1.000 | 1.000 |
-| entity | 0.200 | 0.200 | 0.200 | 0.700 | 0.800 | 0.900 | 1.000 |
+| entity | 0.200 | 0.200 | 0.200 | 0.300 | 0.400 | 0.900 | 1.000 |
 | event | 0.857 | 0.857 | 0.857 | 1.000 | 1.000 | 1.000 | 1.000 |
 | financial | 1.000 | 0.767 | 1.000 | 0.900 | 1.000 | 0.900 | 1.000 |
 | relationship | 0.167 | 0.083 | 0.167 | 0.417 | 0.500 | 0.500 | 0.667 |
 
 Honest findings, kept as-is rather than tuned away:
 
-- **Relationship queries are the weakest lane** (hit@5 0.500 vs ≥ 0.800 for every other
-  category). Multi-hop questions ("who connects X to Y?") are exactly what pure vector
-  similarity cannot answer — this gap is the measured baseline the Milestone 4 graph expansion
-  must improve on.
-- **Top-1 similarity alone cannot drive refusal.** The best-scoring chunk for the four negative
-  queries overlapped the answerable queries' top-hit scores (0.492 vs 0.379 on the original
-  111-document measurement) — the distributions overlap, so a plain score threshold would either miss refusals
-  or refuse answerable queries. Refusal handling in the dashboard milestone must therefore use
-  more than the raw top-1 score (per-query score margins and/or graph corroboration). No
-  threshold was tuned on these 32 queries.
+- **Relationship queries are the weakest lane** (hit@5 0.500 vs 1.000 for document/event/
+  financial). Multi-hop questions ("who connects X to Y?") are exactly what pure vector
+  similarity cannot answer — this gap is the measured baseline graph expansion must improve on.
+- **Entity queries got measurably harder with generator v3**: the new counsel/HR/ACH documents
+  are strong distractors for person-centric questions — entity R@5 fell 0.700 → 0.300 versus
+  the 450-document corpus (recovering to 0.900 by k=10). More realistic corpus, worse early
+  precision; reported as measured.
+- **Refusal is now calibrated, and the operating point is imperfect** (ADR-0019). With 10
+  negative queries, the max-accuracy threshold over top-1 cosine is **0.5089**: 7/10 negatives
+  refused, 2/28 answerable queries falsely refused (accuracy 0.868). The distributions still
+  overlap — three semantically-close negatives (e.g. "prior Crestline kickback schemes")
+  surface above-threshold matches. The threshold ships as the `REFUSAL_THRESHOLD` default with
+  an on-page override; there is no held-out set, and the calibration is honest about that.
 
-#### Measured — graph-expanded (seed 42, 450-document corpus, run 2026-07-15)
+#### Measured — graph-expanded (seed 42, 455-document corpus, run 2026-07-15)
 
 Same pass and query set as above; the hybrid ranking interleaves the pgvector leg with
 evidence-backed Neo4j expansion (top-5 vector hits seed co-mention / correspondence / event
@@ -147,30 +154,51 @@ by `uv run python scripts/evaluate_retrieval.py`; per-query evidence trails are 
 
 | scope | P@1 | R@1 | hit@1 | R@5 | hit@5 | R@10 | hit@10 |
 |---|---|---|---|---|---|---|---|
-| overall | 0.536 | 0.476 | 0.536 | 0.809 | 0.893 | 0.964 | 1.000 |
-| document | 0.400 | 0.400 | 0.400 | 1.000 | 1.000 | 1.000 | 1.000 |
-| entity | 0.200 | 0.200 | 0.200 | 0.600 | 0.600 | 1.000 | 1.000 |
+| overall | 0.536 | 0.476 | 0.536 | 0.738 | 0.821 | 0.857 | 0.893 |
+| document | 0.400 | 0.400 | 0.400 | 0.800 | 0.800 | 1.000 | 1.000 |
+| entity | 0.200 | 0.200 | 0.200 | 0.400 | 0.400 | 0.600 | 0.600 |
 | event | 0.857 | 0.857 | 0.857 | 1.000 | 1.000 | 1.000 | 1.000 |
 | financial | 1.000 | 0.767 | 1.000 | 0.833 | 1.000 | 0.900 | 1.000 |
-| relationship | 0.167 | 0.083 | 0.167 | 0.583 | 0.833 | 0.917 | 1.000 |
+| relationship | 0.167 | 0.083 | 0.167 | 0.583 | 0.833 | 0.750 | 0.833 |
 
-The graph's contribution, measured not asserted:
+The graph's contribution — and its measured cost — on this denser corpus:
 
-- **Relationship hit@5 0.500 → 0.833 and R@10 0.500 → 0.917** — the multi-hop gap vector
-  similarity could not close is exactly where evidence-backed expansion helps; overall hit@10
-  rises 0.929 → 1.000 (R@10 0.857 → 0.964) and hit@5 0.857 → 0.893. Top-1 metrics are
-  structurally unchanged: interleaving never displaces the vector leg's first hit.
-- **Measured cost at k=5 on the 450-document corpus:** interleaved graph hits displace some
-  vector hits early — entity R@5 drops 0.700 → 0.600 and financial R@5 0.900 → 0.833, both
-  fully recovered by k=10. Reported as measured; the fusion is not tuned per category.
+- **Relationship queries still improve decisively where it matters early**: hit@5 0.500 →
+  0.833 and R@5 0.417 → 0.583. The multi-hop gap vector similarity cannot close is exactly
+  where evidence-backed expansion helps. Top-1 metrics are structurally unchanged:
+  interleaving never displaces the vector leg's first hit.
+- **Generator v3 exposed the flip side: on a denser graph, expansion now *hurts* at k=10
+  overall** (hit@10 0.929 → 0.893, entity R@10 0.900 → 0.600, relationship R@10 0.500 → 0.750
+  but hit@10 0.667 → 0.833 vs vector). The new counsel/HR/litigation-hold documents connect
+  the same central people (Reyes, Ellison, Sharma), so expansion interleaves many
+  evidence-backed but query-irrelevant chunks that displace correct vector hits in ranks
+  6–10. On the previous 450-document corpus the hybrid leg won at k=10 (R@10 0.964 / hit@10
+  1.000); the regression is a property of constant-free rank interleaving on hub-dense
+  graphs, reported as measured and not tuned away — candidate future work is capping graph
+  contributions per query or weighting expansion by seed rank.
 - **Summed RRF was measured and rejected** (ADR-0011): its intersection boost let
   graph-connected hub chunks displace correct vector top-1 hits (overall hit@1 0.607 → 0.143
   in that configuration). The failed measurement is recorded because it motivated the fusion
   design; only the interleaved configuration ships.
-- On the original 111-document corpus, relationship R@10 was stuck at 0.750 in both modes;
-  the expanded corpus's richer evidence trails (new planted documents inside one hop of seed
-  entities) lift the hybrid leg to 0.917 while vector-only stays at 0.500 — one-hop expansion
-  remains the structural limit.
+- One-hop expansion remains the structural limit: evidence two hops from every seed is
+  invisible to the hybrid ranking.
+
+### Privilege & PII flags (Milestone 10, ADR-0020)
+
+Document-level rule-based detection (`review/flags.py`) scored against
+`data/labels/privilege_pii.json` by `uv run python scripts/evaluate_flags.py`
+(`artifacts/flags_metrics.json`, run 2026-07-15, 455 documents):
+
+| flag | P | R | F1 | gold positives |
+|---|---|---|---|---|
+| privileged | 1.000 | 1.000 | 1.000 | 4 |
+| pii: ssn / bank_account / routing_number | 1.000 | 1.000 | 1.000 | 1 each |
+
+Perfect scores on clean templated text are expected and say little beyond "the rules and the
+harness work" — real discovery text (scans, forwarded chains, OCR noise) would score
+materially lower. One finding is worth recording: the evaluation caught a gold-label error
+(the IA-2023-19 audit memo declares itself "PRIVILEGED AND CONFIDENTIAL" but was unlabeled);
+the label was corrected, the rule was not changed.
 
 ### Reporting rules
 

@@ -21,6 +21,7 @@ from legal_discovery_graph.config import get_settings
 from legal_discovery_graph.evaluation.retrieval_eval import (
     DEFAULT_KS,
     RankedHit,
+    calibrate_refusal_threshold,
     load_gold_queries,
     score_retrieval,
 )
@@ -120,6 +121,7 @@ def main() -> int:
         "vector_only": vector_metrics,
         "graph_expanded": hybrid_metrics,
         "relationship_hit_at_5": relationship_hit5,
+        "refusal_calibration": calibrate_refusal_threshold(queries, vector_results),
         "note": (
             "Synthetic templated corpus: scores overstate real-world performance "
             "(see docs/DATA_AND_EVALUATION.md and ADR-0005). Refusal/separation analysis "
@@ -145,6 +147,14 @@ def main() -> int:
         f"relationship hit@5: vector-only {relationship_hit5['vector_only']:.3f} -> "
         f"graph-expanded {relationship_hit5['graph_expanded']:.3f}"
     )
+    calibration = metrics["refusal_calibration"]
+    if calibration is not None:
+        print(
+            f"refusal threshold {calibration['threshold']:.4f}: "
+            f"{calibration['negatives_refused']}/{calibration['negatives_total']} negatives "
+            f"refused, {calibration['false_refusals']}/{calibration['answerable_total']} "
+            f"false refusals (accuracy {calibration['accuracy']:.3f})"
+        )
     print(f"metrics written to {metrics_path}")
     return 0
 

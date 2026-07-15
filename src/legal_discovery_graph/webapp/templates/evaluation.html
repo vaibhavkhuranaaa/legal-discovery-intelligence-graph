@@ -91,8 +91,40 @@
         </div>
       </div>
     </details>
+    {% if refusal %}
+      <h3 class="table-title">Refusal calibration</h3>
+      <p class="results-caption tight">
+        {{ refusal.rule }} — threshold
+        <span class="mono-note">{{ '%.4f' | format(refusal.threshold) }}</span> ·
+        {{ refusal.negatives_refused }}/{{ refusal.negatives_total }} negative queries
+        refused · {{ refusal.false_refusals }}/{{ refusal.answerable_total }} false
+        refusals · accuracy {{ '%.3f' | format(refusal.accuracy) }}
+      </p>
+    {% endif %}
     {% if retrieval.note %}
       <p class="results-caption">{{ retrieval.note }}</p>
+    {% endif %}
+  {% endif %}
+</div>
+
+<div class="panel spaced">
+  <h2>Privilege &amp; PII flags <span class="h2-note">rule-based, document-level</span></h2>
+  {% if flags is none %}
+    <div class="notice">
+      No flags metrics artifact found. Generate it with:
+      <code>uv run python scripts/evaluate_flags.py</code>
+    </div>
+  {% else %}
+    <p class="results-caption tight">
+      {{ flags.documents }} documents scored against gold labels ·
+      counsel domains <span class="mono-note">{{ flags.counsel_domains | join(', ') }}</span>
+    </p>
+    <details>
+      <summary class="details-title">Per-flag detail</summary>
+      {% call pct_table(flags_rows, ('precision', 'recall', 'f1'), ('tp', 'fp', 'fn')) %}flag{% endcall %}
+    </details>
+    {% if flags.note %}
+      <p class="results-caption">{{ flags.note }}</p>
     {% endif %}
   {% endif %}
 </div>

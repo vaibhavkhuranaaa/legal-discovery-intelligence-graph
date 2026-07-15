@@ -53,3 +53,4 @@ logs/*
 # IDE
 .idea/
 .vscode/
+.claude/

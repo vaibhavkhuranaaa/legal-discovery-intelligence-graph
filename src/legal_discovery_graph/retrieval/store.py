@@ -53,6 +53,21 @@ _SCHEMA_STATEMENTS: tuple[str, ...] = (
     CREATE INDEX IF NOT EXISTS chunks_embedding_idx
     ON chunks USING hnsw (embedding vector_cosine_ops)
     """,
+    # Search audit trail (ADR-0022). `actor` is reserved until the app has
+    # authentication; rows are append-only and never joined to corpus tables.
+    """
+    CREATE TABLE IF NOT EXISTS audit_log (
+        id              BIGSERIAL PRIMARY KEY,
+        searched_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+        actor           TEXT NOT NULL DEFAULT '',
+        question        TEXT NOT NULL,
+        result_limit    INT NOT NULL,
+        result_count    INT NOT NULL,
+        refused         BOOLEAN NOT NULL,
+        graph_available BOOLEAN NOT NULL,
+        duration_ms     INT NOT NULL
+    )
+    """,
 )
 
 _SEARCH_SQL = """
@@ -215,6 +230,47 @@ class PgVectorStore:
                 for row in rows
             }
         return [by_id[chunk_id] for chunk_id in chunk_ids if chunk_id in by_id]
+
+    def log_search(
+        self,
+        *,
+        question: str,
+        result_limit: int,
+        result_count: int,
+        refused: bool,
+        graph_available: bool,
+        duration_ms: int,
+    ) -> None:
+        """Append one search to the audit trail (ADR-0022)."""
+        with self._engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO audit_log (question, result_limit, result_count, refused,"
+                    " graph_available, duration_ms) VALUES (:question, :result_limit,"
+                    " :result_count, :refused, :graph_available, :duration_ms)"
+                ),
+                {
+                    "question": question,
+                    "result_limit": result_limit,
+                    "result_count": result_count,
+                    "refused": refused,
+                    "graph_available": graph_available,
+                    "duration_ms": duration_ms,
+                },
+            )
+
+    def fetch_audit_log(self, limit: int = 50) -> list[dict]:
+        """Most recent audit rows, newest first."""
+        with self._engine.connect() as connection:
+            rows = connection.execute(
+                text(
+                    "SELECT searched_at, question, result_limit, result_count, refused,"
+                    " graph_available, duration_ms FROM audit_log"
+                    " ORDER BY searched_at DESC, id DESC LIMIT :limit"
+                ),
+                {"limit": limit},
+            ).mappings()
+            return [dict(row) for row in rows]
 
     def corpus_counts(self) -> dict[str, int]:
         """Row counts for verification after indexing."""

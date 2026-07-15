@@ -25,6 +25,7 @@ class DocumentType(StrEnum):
     MEMO = "memo"
     INVOICE = "invoice"
     MEETING_NOTES = "meeting_notes"
+    OTHER = "other"  # ingested real files without a mapped category (PDF/DOCX)
 
 
 class EntityType(StrEnum):

@@ -487,3 +487,93 @@ defensible default).
 the timeline reads as a narrative; the evaluation page leads with one honest number (0.963 on
 the current artifacts) whose derivation is verified by a route test recomputing it from the
 committed artifacts.
+
+## ADR-0018: Client-safe citations — internal IDs never render on investigator pages
+
+**Context:** Evidence cards, graph evidence trails, the cytoscape edge detail, and the
+timeline cited raw hash identifiers (`document <id> · chunk <id>`). Investigators — the end
+clients of an eDiscovery tool — get no value from internal plumbing, and it erodes trust in
+the product surface. (Embedded vectors were already clean: only `chunk.text` is embedded.)
+
+**Decision:** Investigator-facing citations are human-meaningful only: document title ·
+document type · passage number (from the chunk's `sequence`). Graph trails show
+entity — relation — document; the cytoscape edge panel shows the relation between named
+nodes. Full IDs remain in the data layer, artifacts, and per-query evaluation results for
+reproducibility; the Streamlit legacy dashboard is unchanged.
+
+**Consequences:** Pages read like a review tool rather than a debug console. Deep
+chunk-level provenance is still available to engineers via `artifacts/retrieval_results.jsonl`
+and the databases; route tests assert hash IDs never appear in rendered HTML.
+
+## ADR-0019: Calibrated evidence refusal (measured threshold, override link)
+
+**Context:** The app always returned best-effort matches, even for questions the corpus
+provably cannot answer — the worst failure mode for an evidence tool. The gold set was grown
+to 10 negative queries (from 4) for calibration.
+
+**Decision:** `evaluate_retrieval.py` calibrates a max-accuracy threshold over top-1 cosine
+similarities (rule: refuse when top-1 < threshold; midpoint candidates, margin tie-break) and
+writes it to the retrieval artifact. The measured value (0.5089 on seed 42: 7/10 negatives
+refused, 2/28 false refusals, accuracy 0.868) is the `REFUSAL_THRESHOLD` default. The
+investigate page renders an explicit "No supporting evidence found" state with the scores
+shown and an override link ("show below-threshold matches anyway" — leads, not support).
+Fused rank scores are never thresholded — only the vector leg's cosine is meaningful.
+
+**Consequences:** The app can now say "no". The measured operating point is imperfect and
+published: 3 semantically-close negatives (e.g. prior Crestline kickbacks) still surface
+matches, and 2 answerable queries are refused until overridden. 38 queries offer no held-out
+set; the threshold is honest about being calibrated on the full gold set.
+
+## ADR-0020: Rule-based privilege/PII flags; total model score unchanged
+
+**Context:** eDiscovery review requires privilege and PII awareness. The corpus gained
+outside counsel (Hartwell & Pace LLP), privileged planted documents, and synthetic PII with
+gold labels in `data/labels/privilege_pii.json`.
+
+**Decision:** `review/flags.py` detects privilege markers (boilerplate phrases,
+context-anchored "legal advice", counsel-domain emails from `COUNSEL_DOMAINS`) and PII
+(SSN/bank-account/routing-number patterns requiring context words) with deterministic
+regexes — precision-first, no classifier. Flags render as badges on evidence cards at display
+time (no schema change) and are measured document-level by `evaluate_flags.py`
+(P/R/F1 = 1.0 on the clean synthetic corpus; the artifact note states real discovery text
+would score materially lower). The 4-component total model score is **unchanged** — flags are
+a separate measured capability, and changing the score's composition would break
+comparability across milestones. The flags evaluation surfaced one gold-label error (the
+IA-2023-19 audit memo declares itself privileged); the label was corrected, not the rule.
+
+**Consequences:** Reviewers see privilege/PII warnings with measured reliability; the
+headline score still means what it meant in Milestone 9.
+
+## ADR-0021: Real-file ingestion — readers, Bates numbers, SHA-256 dedup manifest
+
+**Context:** Only the synthetic JSON corpus could be processed; real eDiscovery starts from
+PDFs, Word documents, and email files.
+
+**Decision:** `ingestion/readers/` (pypdf, python-docx, stdlib `email`) normalize real files
+into the exact `(Document, body)` shape the existing chunker consumes; `DocumentType` gained
+`OTHER`. `scripts/ingest_files.py` walks a folder, deduplicates by SHA-256 of file bytes,
+assigns sequential Bates-style control numbers (`<MATTER>-000001`, resumable across runs),
+writes standard raw records, and appends every file — ingested, duplicate, or failed — to a
+chain-of-custody manifest (`data/manifest.jsonl`). Ingestion is offline-only (free-tier RAM,
+docs/SCALING.md); after it, `index_pgvector.py`/`load_neo4j.py` work unchanged.
+
+**Consequences:** "Bring your own documents" works end-to-end (verified with generated
+PDF/DOCX/EML fixtures and a duplicate). Extraction quality on real text is *not* covered by
+the synthetic metrics — stated in the docs. No OCR; image-only PDFs fail into the manifest.
+
+## ADR-0022: Append-only search audit trail; stay on free tiers with keep-alive
+
+**Context:** Defensibility requires knowing what was searched and what the tool answered.
+Hosting-wise, free tiers sleep/pause (Render ~15 min, AuraDB ~3 days, Supabase ~7 days).
+
+**Decision:** Every executed search is appended to a PostgreSQL `audit_log` table (question,
+limit, result count, refused?, graph availability, duration; `actor` reserved until
+authentication exists — documented limitation). Writes are best-effort: an audit failure logs
+a warning and never breaks a search. A read-only `/audit` page renders the trail. Hosting
+stays on free tiers ($0): `keep-alive.yml` pings the app every 10 minutes and issues one
+daily Postgres query (`/audit`) and Cypher query (`/timeline`); the paid path is documented
+in docs/SCALING.md (Render Starter first). 
+
+**Consequences:** Investigations leave a defensible, timestamped record surviving restarts
+(subject to no-backup free-tier durability, stated in SCALING.md). The demo stays warm
+without spend; the workaround's best-effort nature is documented rather than hidden.

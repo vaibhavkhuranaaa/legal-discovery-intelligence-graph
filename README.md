@@ -2,29 +2,36 @@
 
 **GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
 
-> **Status: deployed — Milestones 0–9 complete.** Foundation, the synthetic corpus
+> **Status: deployed — Milestones 0–10 complete.** Foundation, the synthetic corpus
 > generator (deterministic corpus + gold labels), entity/event extraction, pgvector retrieval,
-> the Neo4j relationship graph with hybrid vector+graph retrieval, and the designed Flask
-> investigation UI are done — all with reproducible evaluation. **Live demo:**
+> the Neo4j relationship graph with hybrid vector+graph retrieval, the designed Flask
+> investigation UI, and the eDiscovery-readiness milestone (real-file ingestion, calibrated
+> evidence refusal, privilege/PII flags, search audit trail) are done — all with reproducible
+> evaluation. **Live demo:**
 > [legal-discovery-intelligence-graph.onrender.com](https://legal-discovery-intelligence-graph.onrender.com)
-> (Render free tier — the instance sleeps when idle, so the first page load and first search
-> may take a minute). The earlier Streamlit dashboard also remains available
+> (Render free tier; a keep-alive workflow reduces cold starts — see
+> [docs/SCALING.md](docs/SCALING.md)). The earlier Streamlit dashboard also remains available
 > [on Community Cloud](https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/).
 >
-> **Measured results** (450-document synthetic corpus, seed 42):
-> entity-mention extraction micro **F1 0.888 strict / 0.899 relaxed**; event extraction
+> **Measured results** (455-document synthetic corpus, seed 42, run 2026-07-15):
+> entity-mention extraction micro **F1 0.887 strict / 0.899 relaxed**; event extraction
 > **F1 1.000**; vector-only retrieval **R@10 0.857 / hit@10 0.929**; graph-expanded retrieval
-> **R@10 0.964 / hit@10 1.000**, lifting relationship-query **hit@5 from 0.500 to 0.833**
-> (relationship R@10 0.500 → 0.917). Reproduce with `bootstrap_data.py`, `evaluate_extraction.py`,
-> `index_pgvector.py`, `load_neo4j.py`, and `evaluate_retrieval.py`; scores are inflated by
-> clean templated text — see [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md).
+> **R@10 0.857 / hit@10 0.893**, lifting relationship-query **hit@5 from 0.500 to 0.833** but
+> now measurably *hurting* overall @10 on the denser corpus (a real finding about rank
+> interleaving on hub-dense graphs — see the honest reading in
+> [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md)). Evidence refusal calibrated at
+> top-1 cosine **0.5089** (7/10 negatives refused, 2/28 false refusals); privilege/PII flags
+> **P/R/F1 1.0** on clean synthetic text. Reproduce with `bootstrap_data.py`,
+> `evaluate_extraction.py`, `index_pgvector.py`, `load_neo4j.py`, `evaluate_retrieval.py`,
+> and `evaluate_flags.py`; all scores are inflated by clean templated text.
 
 A **Graph RAG eDiscovery investigation platform**. Given a corpus of discovery documents
 (emails, contracts, memos, invoices, meeting notes), it extracts entities and events, indexes
 document chunks for semantic retrieval in **PostgreSQL + pgvector**, models
 entity/document/event relationships in **Neo4j AuraDB**, and serves an investigator-facing
-**Streamlit dashboard** that answers questions with cited evidence, an interactive entity graph,
-and a case timeline — backed by a reproducible precision/recall/F1 evaluation harness.
+**Flask web app** that answers questions with cited evidence (or an explicit calibrated
+refusal), privilege/PII flags, an interactive entity graph, a case timeline, and an audit
+trail — backed by a reproducible precision/recall/F1 evaluation harness.
 
 ## Capabilities
 
@@ -42,8 +49,20 @@ and a case timeline — backed by a reproducible precision/recall/F1 evaluation 
   source badges, cosine scores, graph evidence trails), an interactive Plotly entity graph,
   an extracted-event timeline, an evaluation metrics panel, and explicit degraded states when
   a backend is down. No LLM answer generation — evidence only.
-- **Reproducible evaluation** — gold-labeled synthetic corpus scored for extraction and
-  retrieval precision/recall/F1 (see [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md)).
+- **Calibrated evidence refusal (implemented)** — searches whose best match falls below a
+  measured cosine threshold render an explicit "no supporting evidence" state (with an
+  override) instead of best-effort matches (ADR-0019).
+- **Privilege & PII flags (implemented)** — rule-based detection of privilege markers,
+  outside-counsel correspondence, and SSN/bank/routing PII, badged on evidence cards and
+  measured against gold labels (ADR-0020).
+- **Real-file ingestion (implemented)** — `scripts/ingest_files.py` brings PDF/DOCX/EML files
+  into the same pipeline: SHA-256 dedup, Bates-style control numbers, and a chain-of-custody
+  manifest (ADR-0021). Offline by design (free-tier RAM — [docs/SCALING.md](docs/SCALING.md)).
+- **Search audit trail (implemented)** — every investigation search is recorded append-only in
+  PostgreSQL and browsable at `/audit` (ADR-0022).
+- **Reproducible evaluation** — gold-labeled synthetic corpus scored for extraction,
+  retrieval, refusal, and flags precision/recall/F1
+  (see [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md)).
 
 ## Technology Stack
 
@@ -79,15 +98,17 @@ uv run python scripts/bootstrap_data.py    # generate the synthetic corpus + gol
 uv run python scripts/evaluate_extraction.py   # extraction P/R/F1 -> artifacts/
 uv run python scripts/index_pgvector.py        # embed + index Supabase (needs DATABASE_URL)
 uv run python scripts/load_neo4j.py            # extract + load AuraDB graph (needs NEO4J_*)
-uv run python scripts/evaluate_retrieval.py    # vector vs graph-expanded P/R/hit@k -> artifacts/
+uv run python scripts/evaluate_retrieval.py    # vector vs graph-expanded P/R/hit@k + refusal calibration -> artifacts/
+uv run python scripts/evaluate_flags.py        # privilege/PII flag P/R/F1 -> artifacts/
+uv run python scripts/ingest_files.py --src <dir> --custodian <name>   # bring your own PDF/DOCX/EML
 uv run flask --app legal_discovery_graph.webapp run                  # product web UI
 uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # legacy dashboard
 ```
 
 `bootstrap_data.py` deterministically generates the fictional "Project Falcon" investigation
-corpus (450 documents at the default seed) with exact gold labels — 2,189 entity mentions,
-25 events, and 32 categorized retrieval queries (including 4 negative queries for refusal
-evaluation) — see
+corpus (455 documents at the default seed) with exact gold labels — 2,223 entity mentions,
+30 events, privilege/PII labels, and 38 categorized retrieval queries (including 10 negative
+queries that calibrate the evidence-refusal threshold) — see
 [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md). The dashboard shows retrieved,
 cited evidence with per-chunk graph evidence trails, an entity graph, the extracted event
 timeline, and the evaluation metrics — it does not generate LLM answers. Without configured

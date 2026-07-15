@@ -23,6 +23,7 @@ class EvidenceRow:
     rank: int
     chunk_id: str
     document_id: str
+    sequence: int  # 0-based position of the chunk within its document
     title: str
     doc_type: str
     text: str
@@ -42,6 +43,7 @@ def evidence_rows(result: HybridResult) -> list[EvidenceRow]:
                 rank=rank,
                 chunk_id=chunk.chunk_id,
                 document_id=chunk.document_id,
+                sequence=chunk.sequence,
                 title=chunk.metadata.get("title", chunk.document_id),
                 doc_type=chunk.metadata.get("doc_type", "unknown"),
                 text=chunk.text,
