@@ -369,3 +369,33 @@ degraded render without cloud access). Two UIs now share one presentation core; 
 app is frozen except for security fixes and retires when the Flask deployment (future
 milestone: gunicorn on Render/Railway/Fly.io) is live and smoke-tested. Until then the Flask
 app runs under the dev server only and claims no public URL.
+
+## ADR-0014: Render blueprint deployment with CPU-only Linux torch
+
+**Context:** Milestone 8 deploys the Flask product UI (ADR-0013) publicly. Render's free web
+service (512 MB RAM) was chosen over Railway/Fly.io for its committed-blueprint deploys and
+simplest free tier. Two constraints drove the packaging decisions: the default PyPI `torch`
+wheel on Linux drags in multi-gigabyte CUDA packages no CPU host can use, and gunicorn needs a
+stable WSGI entry point.
+
+**Decision:** (a) **`render.yaml` blueprint committed** — web service, `pip install -r
+requirements.txt` build, `gunicorn --workers 1 --threads 4 --timeout 300
+"legal_discovery_graph.webapp:create_app()"` start (one worker to fit 512 MB; long timeout so a
+cold start can load the embedding model), health check on `/`, secrets declared `sync: false`
+and entered only in the Render dashboard. (b) **Torch pinned to the CPU wheel index on Linux**
+via `[tool.uv.sources]` + an explicit `pytorch-cpu` index; `torch` is promoted to a direct
+dependency because uv sources do not apply to transitive packages. macOS/dev resolution is
+unchanged. (c) **`requirements.txt` is now exported with `--emit-index-url`** so pip on any
+host can resolve `torch==2.13.0+cpu`; this also shrinks the existing Streamlit Cloud install
+(142 vs 160 packages, no NVIDIA payloads). (d) **gunicorn added as a runtime dependency.**
+
+**Alternatives considered:** Docker on Render (more control, but a second packaging path to
+maintain for no current need); Railway (no committed infra file on the free path); keeping
+CUDA wheels (multi-GB build, likely free-tier failure); a separate hand-edited
+requirements-render.txt (violates the generated-artifact rule).
+
+**Consequences:** Deployment is reproducible from the repo plus dashboard-entered secrets. Free
+instances sleep and lose the Hugging Face cache, so the first search after idle re-downloads
+the model (~90 MB) — surfaced to users as a slow first search, consistent with the cold-start
+failure boundary. The live URL is claimed in README/docs only after the smoke-test checklist
+passes against it.

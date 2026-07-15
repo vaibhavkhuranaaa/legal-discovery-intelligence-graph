@@ -113,7 +113,7 @@ Exit criteria met: all four pages verified locally against live Supabase + AuraD
 degraded/no-credential states covered by 22 Flask test-client tests; 110 tests passing; ruff
 clean.
 
-## Milestone 8 — Flask public deployment ⬜
+## Milestone 8 — Flask public deployment 🔄 (infrastructure committed; live verification pending)
 
 Deploy the Flask app behind a production WSGI server (gunicorn) to a free-tier host
 (Render/Railway/Fly.io), secrets via host environment variables, smoke-test checklist against

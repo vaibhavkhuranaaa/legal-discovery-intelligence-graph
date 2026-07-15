@@ -1,0 +1,24 @@
+# Render Blueprint — Flask product UI (Milestone 8, ADR-0014).
+# Deploy via Render dashboard → New → Blueprint → this repository.
+# Secrets (sync: false) are entered in the dashboard, never committed.
+services:
+  - type: web
+    name: legal-discovery-intelligence-graph
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # One worker + threads to fit the free tier's 512 MB; generous timeout so the
+    # first search can download/load the sentence-transformer on a cold start.
+    startCommand: gunicorn --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT "legal_discovery_graph.webapp:create_app()"
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.11
+      - key: DATABASE_URL
+        sync: false
+      - key: NEO4J_URI
+        sync: false
+      - key: NEO4J_USERNAME
+        sync: false
+      - key: NEO4J_PASSWORD
+        sync: false

@@ -26,6 +26,8 @@ dependencies = [
     "pgvector>=0.3",
     "python-dotenv>=1.0",
     "flask>=3.0",
+    "gunicorn>=23",
+    "torch>=2.13",
 ]
 
 [dependency-groups]
@@ -48,6 +50,17 @@ packages = ["src/legal_discovery_graph"]
 
 [tool.uv]
 required-version = ">=0.5"
+
+# Deployed hosts (Render, Streamlit Cloud) are CPU-only Linux boxes; the default
+# PyPI torch wheel drags in multi-GB CUDA packages there. Pin Linux to the CPU
+# wheel index; macOS/dev resolution is unaffected.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
 
 [tool.ruff]
 line-length = 100

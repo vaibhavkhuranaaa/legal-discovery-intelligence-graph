@@ -168,9 +168,10 @@ generated data and artifacts correctly gitignored.
 
 **What does NOT exist yet (do not assume otherwise):**
 
-- No Flask deployment: the `webapp/` UI (Milestone 7) runs locally only; the live URL is the
-  Streamlit Community Cloud app. Supabase and AuraDB are the only other cloud services in use.
-- No production WSGI server dependency yet (gunicorn arrives with Milestone 8).
+- No verified Flask deployment yet: the `webapp/` UI runs locally; Render infrastructure is
+  committed (`render.yaml`, gunicorn, CPU-torch pin — ADR-0014) but the live smoke test is
+  pending. The live URL is still the Streamlit Community Cloud app. Supabase and AuraDB are
+  the only other cloud services in use.
 - No LLM answer generation anywhere — the dashboard displays retrieved, cited evidence only.
 - No refusal threshold in runtime code (ADR-0010); negative questions display their retrieved
   chunks with scores — the UI does not fabricate a refusal.
