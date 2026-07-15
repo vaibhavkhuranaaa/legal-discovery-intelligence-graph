@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.title if doc else 'Document' }} — Legal Discovery Intelligence Graph{% endblock %}
+{% block content %}
+{% if document_error %}
+  <div class="notice error">
+    The source document could not be loaded: {{ document_error }}
+  </div>
+{% elif not_found %}
+  <div class="notice warn">
+    No document with this identifier exists in the indexed corpus. The corpus
+    may have been regenerated since this link was made — re-run the search from
+    the <a href="{{ url_for('webapp.investigate') }}">Investigate</a> page.
+  </div>
+{% else %}
+  <div class="page-head">
+    <p class="eyebrow">Source document</p>
+    <h1>{{ doc.title }}</h1>
+    <p class="lede">
+      The full stored document behind a citation — every retrieved passage can
+      be read here in context.
+    </p>
+  </div>
+
+  <div class="panel">
+    <div class="doc-meta">
+      <span class="doc-type">{{ doc.doc_type }}</span>
+      {% if flags and flags.privileged %}
+        <span class="flag-pill priv"
+              title="{{ flags.privilege_markers | join(' · ') }}">potentially privileged</span>
+      {% endif %}
+      {% if flags and flags.pii_types %}
+        <span class="flag-pill pii">PII: {{ flags.pii_types | join(', ') |
+          replace('_', ' ') }}</span>
+      {% endif %}
+    </div>
+    <dl class="doc-facts">
+      {% if doc.custodian %}
+        <div><dt>Custodian</dt><dd>{{ doc.custodian }}</dd></div>
+      {% endif %}
+      {% if doc.sent_at %}
+        <div><dt>Sent</dt><dd>{{ doc.sent_at.strftime('%B %-d, %Y') }}</dd></div>
+      {% endif %}
+      <div><dt>Passages</dt><dd>{{ doc.passages | length }}</dd></div>
+    </dl>
+  </div>
+
+  {% for passage in doc.passages %}
+    <article class="evidence-card">
+      <header class="evidence-head">
+        <span class="rank-chip">{{ passage.sequence + 1 }}</span>
+        <div class="evidence-title">
+          <h3>Passage {{ passage.sequence + 1 }}</h3>
+        </div>
+      </header>
+      <p class="evidence-text">{{ passage.text }}</p>
+    </article>
+  {% endfor %}
+
+  <div class="notice spaced">
+    This document is synthetic — generated deterministically by
+    <code>scripts/bootstrap_data.py</code>; all names, amounts, and identifiers
+    are fictional. See <a href="{{ url_for('webapp.case') }}">the case brief</a>
+    for how the corpus is built and verified.
+  </div>
+{% endif %}
+{% endblock %}

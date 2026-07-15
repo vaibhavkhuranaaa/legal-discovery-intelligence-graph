@@ -121,7 +121,8 @@ def _event(day: int, description: str) -> TimelineEvent:
 @pytest.mark.parametrize(
     ("path", "heading"),
     [
-        ("/", "Investigate"),
+        ("/", "The Project Falcon matter"),
+        ("/investigate", "Investigate"),
         ("/graph", "Entity graph"),
         ("/timeline", "Timeline"),
         ("/audit", "Audit trail"),
@@ -137,7 +138,7 @@ def test_page_renders_with_heading(client: FlaskClient, path: str, heading: str)
 def test_layout_has_nav_and_status_pills(client: FlaskClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
-    for href in ("/graph", "/timeline", "/evaluation"):
+    for href in ("/investigate", "/graph", "/timeline", "/evaluation"):
         assert f'href="{href}"' in response.text
     # Status pills render regardless of configuration and never leak secrets.
     assert "pgvector" in response.text
@@ -165,7 +166,7 @@ class TestInvestigateSearch:
                 database_configured=False, graph_configured=False, embedding_model="test-model"
             ),
         )
-        response = client.get("/?q=who+paid")
+        response = client.get("/investigate?q=who+paid")
         assert response.status_code == 200
         assert "DATABASE_URL" in response.text
         assert "evidence-card" not in response.text
@@ -180,16 +181,20 @@ class TestInvestigateSearch:
             ),
         )
         _stub_search(monkeypatch, backend.InvestigationOutcome(result=_result(ranked), error=None))
-        response = client.get("/?q=who+paid&limit=5")
+        response = client.get("/investigate?q=who+paid&limit=5")
         assert response.status_code == 200
         assert response.text.count("evidence-card") == 2
         assert "cosine 0.910" in response.text  # vector hit shows similarity
         assert "Omar Tran" in response.text  # graph trail rendered
         # Citations are client-facing: title · doc type · passage — never hash IDs.
         assert "Falcon memo · memo · passage 1" in response.text
-        assert "doc-v1" not in response.text
+        # Each citation links to the full source document; the document ID
+        # appears only inside those hrefs, never as visible text.
+        assert 'href="/document/doc-v1"' in response.text
+        assert response.text.count("doc-v1") == response.text.count("/document/doc-v1")
         assert "seed-chunk-0000" not in response.text
         assert "1 contributed by graph expansion" in response.text
+        assert "How to read this evidence" in response.text  # collapsed glossary panel
 
     def test_graph_degradation_shows_warning_with_reason(
         self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
@@ -203,7 +208,7 @@ class TestInvestigateSearch:
                 result=_result(ranked, graph_available=False), error=None
             ),
         )
-        response = client.get("/?q=who+paid")
+        response = client.get("/investigate?q=who+paid")
         assert "Graph expansion is unavailable" in response.text
         assert "Neo4j unreachable" in response.text
         assert response.text.count("evidence-card") == 1
@@ -215,7 +220,7 @@ class TestInvestigateSearch:
             monkeypatch,
             backend.InvestigationOutcome(result=None, error="OperationalError: db down"),
         )
-        response = client.get("/?q=who+paid")
+        response = client.get("/investigate?q=who+paid")
         assert "Investigation search failed" in response.text
         assert "OperationalError: db down" in response.text
 
@@ -223,7 +228,7 @@ class TestInvestigateSearch:
         self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         _stub_search(monkeypatch, backend.InvestigationOutcome(result=_result(()), error=None))
-        response = client.get("/?q=who+paid")
+        response = client.get("/investigate?q=who+paid")
         assert "No evidence was retrieved" in response.text
         assert "index_pgvector.py" in response.text
 
@@ -236,7 +241,7 @@ class TestInvestigateSearch:
         result = _result(ranked, vector_hits=(_chunk("v1", 0.31),))
         _stub_search(monkeypatch, backend.InvestigationOutcome(result=result, error=None))
         _stub_settings(monkeypatch, refusal_threshold=0.5)
-        response = client.get("/?q=unsupported+question")
+        response = client.get("/investigate?q=unsupported+question")
         assert "No supporting evidence found" in response.text
         assert "evidence-card" not in response.text
         assert "all=1" in response.text  # override link offered
@@ -250,7 +255,7 @@ class TestInvestigateSearch:
         result = _result(ranked, vector_hits=(_chunk("v1", 0.31),))
         _stub_search(monkeypatch, backend.InvestigationOutcome(result=result, error=None))
         _stub_settings(monkeypatch, refusal_threshold=0.5)
-        response = client.get("/?q=unsupported+question&all=1")
+        response = client.get("/investigate?q=unsupported+question&all=1")
         assert response.text.count("evidence-card") == 1
         assert "below the calibrated evidence threshold" in response.text
 
@@ -263,7 +268,7 @@ class TestInvestigateSearch:
         result = _result(ranked, vector_hits=(_chunk("v1", 0.82),))
         _stub_search(monkeypatch, backend.InvestigationOutcome(result=result, error=None))
         _stub_settings(monkeypatch, refusal_threshold=0.5)
-        response = client.get("/?q=who+paid")
+        response = client.get("/investigate?q=who+paid")
         assert response.text.count("evidence-card") == 1
         assert "No supporting evidence found" not in response.text
 
@@ -283,7 +288,7 @@ class TestInvestigateSearch:
         )
         ranked = (RankedChunk(chunk, fused_score=1.0, sources=("vector",), evidence=()),)
         _stub_search(monkeypatch, backend.InvestigationOutcome(result=_result(ranked), error=None))
-        response = client.get("/?q=who+paid")
+        response = client.get("/investigate?q=who+paid")
         assert "potentially privileged" in response.text
         assert "PII: bank account" in response.text
 
@@ -297,9 +302,98 @@ class TestInvestigateSearch:
             return backend.InvestigationOutcome(result=_result(()), error=None)
 
         monkeypatch.setattr(routes, "_search", capture)
-        client.get("/?q=x&limit=999")
-        client.get("/?q=x&limit=abc")
+        client.get("/investigate?q=x&limit=999")
+        client.get("/investigate?q=x&limit=abc")
         assert seen == [10, 10]
+
+
+class TestCasePage:
+    def test_tour_links_prefill_investigate_searches(self, client: FlaskClient) -> None:
+        response = client.get("/")
+        assert response.status_code == 200
+        # Every tour step is a prefilled search link against /investigate.
+        assert response.text.count('class="tour-question"') == len(routes.TOUR_STEPS)
+        assert "/investigate?q=" in response.text
+        assert "Who+approved+the+award+of+the+Project+Falcon+contract" in response.text
+
+    def test_brief_glossary_and_verify_sections_render(self, client: FlaskClient) -> None:
+        response = client.get("/")
+        assert "455 synthetic documents" in response.text
+        assert "How to read the evidence" in response.text
+        assert 'class="glossary"' in response.text  # shared include
+        assert "How to verify the output" in response.text
+        assert "bootstrap_data.py" in response.text
+        assert "spoiler" in response.text  # full story stays collapsed in a details
+
+
+class TestDocumentPage:
+    def test_document_renders_metadata_flags_and_passages(
+        self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        document = {
+            "document_id": "doc-p1",
+            "doc_type": "email",
+            "title": "Engagement of outside counsel",
+            "custodian": "Marcus Webb",
+            "sent_at": datetime(2023, 11, 9, tzinfo=UTC),
+            "passages": [
+                {"sequence": 0, "text": "PRIVILEGED AND CONFIDENTIAL — engagement letter."},
+                {"sequence": 1, "text": "Scope of the review is attached."},
+            ],
+        }
+        monkeypatch.setattr(
+            backend,
+            "fetch_document_view",
+            lambda document_id: backend.DocumentOutcome(document=document, error=None),
+        )
+        response = client.get("/document/doc-p1")
+        assert response.status_code == 200
+        assert "<h1>Engagement of outside counsel</h1>" in response.text
+        assert "Marcus Webb" in response.text
+        assert "November 9, 2023" in response.text
+        assert "potentially privileged" in response.text  # flags run over the full text
+        assert response.text.count("evidence-card") == 2  # one card per passage
+        assert "Passage 2" in response.text
+        assert "synthetic" in response.text  # provenance disclaimer
+
+    def test_unknown_document_is_an_explicit_not_found(
+        self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            backend,
+            "fetch_document_view",
+            lambda document_id: backend.DocumentOutcome(document=None, error=None),
+        )
+        response = client.get("/document/nope")
+        assert response.status_code == 200
+        assert "No document with this identifier" in response.text
+
+    def test_store_failure_is_an_explicit_error(
+        self, client: FlaskClient, configured_db: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            backend,
+            "fetch_document_view",
+            lambda document_id: backend.DocumentOutcome(
+                document=None, error="OperationalError: db down"
+            ),
+        )
+        response = client.get("/document/doc-1")
+        assert "could not be loaded" in response.text
+        assert "OperationalError: db down" in response.text
+
+    def test_unconfigured_database_shows_reason(
+        self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            backend,
+            "backend_status",
+            lambda: backend.BackendStatus(
+                database_configured=False, graph_configured=False, embedding_model="test-model"
+            ),
+        )
+        response = client.get("/document/doc-1")
+        assert "DATABASE_URL is not configured" in response.text
 
 
 class TestGraphPage:
@@ -362,6 +456,7 @@ class TestTimelinePage:
         assert "Wire transfer approved" in response.text
         assert "Omar Tran" in response.text  # entity chip
         assert "Audit memo" in response.text
+        assert 'href="/document/doc-1"' in response.text  # citation links to the source
         assert "chunk-1" not in response.text  # internal IDs never render
         assert response.text.count("<tr>") == 3  # table fallback: header + 2 events
 
@@ -391,7 +486,7 @@ class TestAuditPage:
         result = _result(ranked, vector_hits=(_chunk("v1", 0.31),))
         _stub_search(monkeypatch, backend.InvestigationOutcome(result=result, error=None))
         _stub_settings(monkeypatch, refusal_threshold=0.5)
-        client.get("/?q=unsupported+question")
+        client.get("/investigate?q=unsupported+question")
         assert len(recorded) == 1
         assert recorded[0]["question"] == "unsupported question"
         assert recorded[0]["refused"] is True

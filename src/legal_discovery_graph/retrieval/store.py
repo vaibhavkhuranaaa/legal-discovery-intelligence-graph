@@ -231,6 +231,34 @@ class PgVectorStore:
             }
         return [by_id[chunk_id] for chunk_id in chunk_ids if chunk_id in by_id]
 
+    def fetch_document(self, document_id: str) -> dict | None:
+        """One stored document with its ordered passages, or ``None`` if unknown."""
+        with self._engine.connect() as connection:
+            document = (
+                connection.execute(
+                    text(
+                        "SELECT document_id, doc_type, title, custodian, sent_at"
+                        " FROM documents WHERE document_id = :document_id"
+                    ),
+                    {"document_id": document_id},
+                )
+                .mappings()
+                .first()
+            )
+            if document is None:
+                return None
+            passages = connection.execute(
+                text(
+                    "SELECT sequence, text FROM chunks"
+                    " WHERE document_id = :document_id ORDER BY sequence"
+                ),
+                {"document_id": document_id},
+            ).mappings()
+            return {
+                **dict(document),
+                "passages": [dict(row) for row in passages],
+            }
+
     def log_search(
         self,
         *,

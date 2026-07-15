@@ -142,6 +142,26 @@ def fetch_search_audit(limit: int = 50) -> AuditOutcome:
         return AuditOutcome(rows=(), error=f"{type(exc).__name__}: {exc}")
 
 
+@dataclass(frozen=True)
+class DocumentOutcome:
+    """One stored source document for display, or why it could not be loaded.
+
+    ``document`` is ``None`` with no error when the ID simply is not in the
+    corpus (a not-found, not a failure).
+    """
+
+    document: dict | None
+    error: str | None
+
+
+def fetch_document_view(document_id: str) -> DocumentOutcome:
+    """Load a source document with its ordered passages for the document page."""
+    try:
+        return DocumentOutcome(document=_audit_store().fetch_document(document_id), error=None)
+    except _VECTOR_FAILURES as exc:
+        return DocumentOutcome(document=None, error=f"{type(exc).__name__}: {exc}")
+
+
 def load_metrics_artifact(path: Path) -> dict | None:
     """Load a committed evaluation artifact, or ``None`` when it does not exist."""
     if not path.exists():

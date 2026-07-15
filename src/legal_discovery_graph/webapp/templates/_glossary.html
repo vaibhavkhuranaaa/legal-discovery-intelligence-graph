@@ -1,0 +1,63 @@
+<dl class="glossary">
+  <div class="glossary-item">
+    <dt><span class="source-pill vector">vector</span></dt>
+    <dd>
+      This passage was found by semantic search: the question and every stored
+      passage are embedded as vectors, and the closest passages by cosine
+      similarity are returned — matching meaning, not keywords.
+    </dd>
+  </div>
+  <div class="glossary-item">
+    <dt><span class="source-pill graph">graph</span></dt>
+    <dd>
+      This passage was reached through the Neo4j entity graph: entities in the
+      vector hits (people, organizations, projects) were expanded along their
+      stored relationships to documents the semantic search alone missed. Its
+      graph evidence trail lists the exact relations that led here.
+    </dd>
+  </div>
+  <div class="glossary-item">
+    <dt>cosine</dt>
+    <dd>
+      Semantic closeness between the question and the passage, from 0 to 1
+      (1 = identical meaning). When the best match falls below the calibrated
+      threshold of 0.509, the app refuses to present evidence — the corpus
+      likely does not answer the question (measured on the gold query set; see
+      Evaluation).
+    </dd>
+  </div>
+  <div class="glossary-item">
+    <dt>fused rank score</dt>
+    <dd>
+      The ordering score when vector and graph results are interleaved into one
+      ranked list. It ranks passages against each other and means nothing in
+      isolation — evidence strength is the cosine score plus the trail.
+    </dd>
+  </div>
+  <div class="glossary-item">
+    <dt><span class="flag-pill priv">potentially privileged</span></dt>
+    <dd>
+      Rule-based markers were detected — privilege phrases (e.g.
+      “attorney-client privileged”) or correspondence with an
+      outside-counsel email domain. This is a review aid that flags documents
+      for a privilege review; it is not a legal determination, and nothing is
+      withheld.
+    </dd>
+  </div>
+  <div class="glossary-item">
+    <dt><span class="flag-pill pii">PII</span></dt>
+    <dd>
+      The passage matches personal-data patterns: Social Security, bank
+      account, or routing numbers. In this synthetic corpus every such value is
+      deliberately invalid (e.g. an SSN area number that is never issued).
+    </dd>
+  </div>
+  <div class="glossary-item">
+    <dt>passage</dt>
+    <dd>
+      The unit of retrieval: a contiguous span of a source document. The
+      citation under each card links to the full document so every passage can
+      be read in context.
+    </dd>
+  </div>
+</dl>

@@ -1,23 +1,27 @@
-# Demo Script (90 seconds)
+# Demo Script (2 minutes)
 
 > **Status: VERIFIED — live deployment.** Run against
-> `https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/`.
+> `https://legal-discovery-intelligence-graph.onrender.com`.
 
 ## Demo Outline
 
-1. **(0–15s) Frame the problem** — "Discovery productions hide who did what, with whom, when.
-   This app answers that with cited evidence."
-2. **(15–40s) Ask an investigative question** — run “What connects Daniel Reyes to Northgate
-   Supply Solutions?”; show ranked, cited hybrid evidence.
-3. **(40–65s) Pivot into the graph** — expand an entity from the evidence; show the Neo4j
-   subgraph connecting people, organizations, money, and documents.
-4. **(65–80s) Timeline** — filter events by the key entity; show the case chronology.
-5. **(80–90s) Credibility close** — evaluation page: precision/recall/F1, reproducible from the
-   repo; synthetic-data disclosure.
+1. **(0–20s) Start on the case page (`/`)** — "eDiscovery is a story decoded from documents.
+   Here's the matter, the corpus, and a guided tour." Point at the synthetic-data disclosure
+   and the six tour steps.
+2. **(20–50s) Run tour steps 1–2** — the award question (cited vector evidence, cosine
+   scores) and the Reyes–Crestline relationship question (graph badges, open a graph
+   evidence trail).
+3. **(50–70s) Verify a citation** — click "view source document →" under an evidence card;
+   the full stored document renders with its passages and privilege/PII flags.
+4. **(70–90s) Run tour steps 4–6** — privilege badge on the audit/counsel material, PII badge
+   on the HR record, then the trick question: calibrated refusal instead of weak matches.
+5. **(90–110s) Timeline + entity graph** — the decoded chronology, every event cited and
+   linked to its source.
+6. **(110–120s) Credibility close** — Evaluation page (total model score with the honest
+   hybrid-@10 regression) and `/audit` showing the searches just run.
 
 ## Recording Notes
 
-- On a cold instance, wait for the first retrieval while the embedding model warms; subsequent
-  searches are faster.
-- Show the entity graph immediately after the chosen question, then the timeline and evaluation
-  tabs. Do not present a generated conclusion: the product shows cited evidence only.
+- On a cold instance, wait for the first retrieval while the embedding model warms;
+  subsequent searches are faster (a keep-alive workflow reduces cold starts).
+- Do not present a generated conclusion: the product shows cited evidence only.

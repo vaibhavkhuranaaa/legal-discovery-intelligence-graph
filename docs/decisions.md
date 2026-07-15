@@ -577,3 +577,30 @@ in docs/SCALING.md (Render Starter first).
 **Consequences:** Investigations leave a defensible, timestamped record surviving restarts
 (subject to no-backup free-tier durability, stated in SCALING.md). The demo stays warm
 without spend; the workaround's best-effort nature is documented rather than hidden.
+
+## ADR-0023: Case-study layer — in-app source documents as the verification path
+
+**Context:** The live demo assumed a knowledgeable visitor: nothing explained the Project
+Falcon matter or the corpus, evidence passages could not be traced to their source documents,
+and the UI's labels (`vector`, `graph`, cosine, fused rank score, `potentially privileged`,
+PII, refusal) were unexplained jargon. eDiscovery *is* a story decoded from documents with a
+verification trail, so the site should teach itself.
+
+**Decision:** A case-study layer, display-only (no retrieval, datagen, or measurement
+changes). The landing page `/` is now a case brief: the matter, the corpus composition
+(planted evidence vs. noise, synthetic disclosure), a six-step guided tour of prefilled
+searches taken verbatim from the gold query set (so each step's behavior — graph badges,
+privilege/PII flags, calibrated refusal — is known and was verified live), a full glossary,
+a "how to verify" section, and the full story collapsed as a spoiler. Investigate moved to
+`/investigate`. Every citation (evidence cards, graph trails, timeline) now links to a new
+`/document/<document_id>` page rendering the full stored document — metadata, privilege/PII
+flags, and all passages in order — because `data/` is gitignored, so in-app source rendering
+from Postgres (`PgVectorStore.fetch_document`) is the honest verification path; metric
+verification links point at the committed `artifacts/` on GitHub. Document IDs appear only
+inside hrefs, never as visible text (ADR-0018 upheld; enforced by test). A shared glossary
+include renders collapsed above search results and expanded on the case page.
+
+**Consequences:** A first-time visitor gets context, a path to check any output against its
+source, and definitions for every label. URL surface changed (`/` → case brief); old
+bookmarked searches on `/` lose the query (documented; search URLs were always shareable via
+`/investigate?q=`).

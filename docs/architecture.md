@@ -50,7 +50,7 @@ Evaluation (src/.../evaluation) — precision/recall/F1 vs gold labels (data/lab
 | `evaluation/` | Gold-label scoring: extraction and retrieval precision/recall/F1, refusal-threshold calibration (ADR-0019) |
 | `review/` | Rule-based privilege/PII flags (`flags.py`, ADR-0020) — pure functions, badged on evidence cards, measured by `scripts/evaluate_flags.py` |
 | `ui/` | Presentation core + Streamlit app: `backend.py` (only data boundary; explicit outcome objects) → pure `presenters.py`/`figures.py` → `streamlit_app.py` (wiring + caching only) — ADR-0012 |
-| `webapp/` | Flask product UI (ADR-0013): routes + Jinja templates + CSS design system over the unchanged `ui/` core; stateless GET-param searches; plotly.js served from the installed package; calibrated refusal state (ADR-0019), privilege/PII badges (ADR-0020), `/audit` trail (ADR-0022); client-safe citations only (ADR-0018) |
+| `webapp/` | Flask product UI (ADR-0013): routes + Jinja templates + CSS design system over the unchanged `ui/` core; stateless GET-param searches; plotly.js served from the installed package; calibrated refusal state (ADR-0019), privilege/PII badges (ADR-0020), `/audit` trail (ADR-0022); client-safe citations only (ADR-0018); case-study layer — case-brief landing page, guided tour, glossary, `/document/<id>` source view (ADR-0023) |
 | `config.py` | Single settings accessor (`get_settings()`); the only env-var boundary |
 | `models.py` | Pydantic contracts shared across all subsystems; shared IDs across both stores |
 

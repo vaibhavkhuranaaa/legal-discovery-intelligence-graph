@@ -66,7 +66,91 @@ def _inject_status() -> dict:
     return {"status": backend.backend_status()}
 
 
+# The guided tour on the case page. Questions are verbatim gold queries from
+# the generated corpus (datagen/scenario.py), so each step's behavior — badges,
+# graph contribution, refusal — is known and reproducible.
+TOUR_STEPS: tuple[dict, ...] = (
+    {
+        "question": "Who approved the award of the Project Falcon contract?",
+        "note": (
+            "Start where the money went. The award determination surfaces as a "
+            "semantic match — each passage shows a vector badge and its cosine "
+            "similarity score."
+        ),
+    },
+    {
+        "question": "What is the relationship between Daniel Reyes and Crestline Holdings?",
+        "note": (
+            "A relationship question. Passages with a graph badge were reached by "
+            "expanding entity relationships in Neo4j — open a card's graph "
+            "evidence trail to see the stored relations that connected it."
+        ),
+    },
+    {
+        "question": "What payments did Northgate make to Crestline Holdings?",
+        "note": (
+            "Follow the money: the quarterly transfers routed through Crestline "
+            "Holdings, corroborated across emails and the audit memo."
+        ),
+    },
+    {
+        "question": "When did the internal audit of Project Falcon procurement begin?",
+        "note": (
+            "The unraveling. Audit and outside-counsel material carries a "
+            "“potentially privileged” badge — rule-based markers, "
+            "flagged for review, never withheld."
+        ),
+    },
+    {
+        "question": "What happened to Daniel Reyes after the audit findings?",
+        "note": (
+            "The consequences. The HR personnel record contains a synthetic "
+            "Social Security number, so its passage carries a PII badge."
+        ),
+    },
+    {
+        "question": "What criminal charges were filed against Daniel Reyes?",
+        "note": (
+            "A trick question — the corpus contains no charging documents. "
+            "Instead of presenting weak matches as support, the app refuses: "
+            "“no supporting evidence found.”"
+        ),
+    },
+)
+
+
 @bp.get("/")
+def case() -> str:
+    """Case-study landing page: the matter, the guided tour, how to verify."""
+    return render_template("case.html", active="case", tour=TOUR_STEPS)
+
+
+@bp.get("/document/<document_id>")
+def document(document_id: str) -> str:
+    """Full source document view — the verification target for every citation."""
+    context: dict = {
+        "active": "investigate",
+        "doc": None,
+        "flags": None,
+        "document_error": None,
+        "not_found": False,
+    }
+    if not backend.backend_status().database_configured:
+        context["document_error"] = "DATABASE_URL is not configured"
+    else:
+        outcome = backend.fetch_document_view(document_id)
+        if outcome.error is not None:
+            context["document_error"] = outcome.error
+        elif outcome.document is None:
+            context["not_found"] = True
+        else:
+            context["doc"] = outcome.document
+            full_text = "\n\n".join(p["text"] for p in outcome.document["passages"])
+            context["flags"] = flag_text(full_text, _counsel_domains())
+    return render_template("document.html", **context)
+
+
+@bp.get("/investigate")
 def investigate() -> str:
     question = request.args.get("q", "").strip()
     limit = _requested_limit()

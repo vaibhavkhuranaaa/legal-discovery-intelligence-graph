@@ -150,3 +150,16 @@ documents, 30 events, 38 queries; all metrics re-measured honestly — hybrid @1
 to vector-only on the denser graph (hit@10 0.929 → 0.893; total model score 0.909), recorded
 as a real interleaving finding, not tuned away. Free-tier limits documented in
 `docs/SCALING.md` with a keep-alive workflow. 169 tests passing.
+
+## Milestone 11 — Case-study site ✅
+
+The live demo now explains and verifies itself (ADR-0023). Landing page `/` is a case brief:
+the Project Falcon matter, corpus composition with synthetic disclosure, a six-step guided
+tour of prefilled gold-query searches (semantic evidence → graph expansion → privilege badge →
+PII badge → calibrated refusal; each step's behavior verified live), a full label glossary,
+a "how to verify" section, and the complete story collapsed as a spoiler. Investigate moved
+to `/investigate`. New `/document/<id>` page renders any stored source document (metadata,
+privilege/PII flags, all passages in order); every citation on evidence cards, graph trails,
+and the timeline links to it — the verification path for every passage shown. Glossary
+include rendered collapsed above results and expanded on the case page; tooltips on badges
+and scores. Display layer only: no retrieval, datagen, or metric changes. 176 tests passing.

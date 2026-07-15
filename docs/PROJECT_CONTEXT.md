@@ -1,7 +1,7 @@
 # Project Context — Read This First In A New Session
 
 Self-contained handoff for the **Legal Discovery Intelligence Graph**. Contains only verified
-current state — no aspirations. Last verified: 2026-07-15 (Milestone 10 completion).
+current state — no aspirations. Last verified: 2026-07-15 (Milestone 11 completion).
 
 ## What This Project Is
 
@@ -15,7 +15,7 @@ Streamlit dashboard on Community Cloud. Full design: `product.md`, `architecture
 **Repository:** `github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph` (public).
 CI (GitHub Actions): `uv sync --frozen`, `ruff check`, `pytest` on pushes/PRs to `main`.
 
-## Current Status: Milestones 0–10 complete
+## Current Status: Milestones 0–11 complete
 
 **Milestone 7 — Flask product web UI (done):** `webapp/` package (ADR-0013):
 Flask app factory + blueprint, four server-rendered Jinja pages (Investigate, Entity graph,
@@ -61,6 +61,18 @@ strict; hybrid R@10 0.857 / hit@10 0.893 — **graph expansion now hurts @10 on 
 corpus** (documented in DATA_AND_EVALUATION.md); total model score 0.909. Free-tier limits +
 paid path in `docs/SCALING.md`; `keep-alive.yml` pings Render every 10 min and both DBs
 daily. 169 tests passing.
+
+**Milestone 11 — Case-study site (done):** Display-only layer (ADR-0023): landing page `/`
+is now the Project Falcon case brief — the matter, corpus composition + synthetic
+disclosure, a six-step guided tour of prefilled gold-query searches (vector evidence →
+graph expansion → privilege badge → PII badge → calibrated refusal), a label glossary
+(`_glossary.html`, also collapsed above search results), a how-to-verify section, and the
+full story as a collapsed spoiler. Investigate moved to `/investigate`. New
+`/document/<document_id>` source-document page (`PgVectorStore.fetch_document` →
+`backend.fetch_document_view`) renders metadata, privilege/PII flags, and all passages;
+every citation on evidence cards, graph trails, and the timeline links to it. Document IDs
+appear only in hrefs (test-enforced). Tour behavior verified live per step. 176 tests
+passing.
 
 **Milestone 0 — Foundation (done):** uv-managed Python 3.12 project (Hatchling, src layout),
 Ruff/pytest baseline, `config.py` (settings singleton), `models.py` (shared-ID Pydantic

@@ -2,12 +2,13 @@
 
 **GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
 
-> **Status: deployed — Milestones 0–10 complete.** Foundation, the synthetic corpus
+> **Status: deployed — Milestones 0–11 complete.** Foundation, the synthetic corpus
 > generator (deterministic corpus + gold labels), entity/event extraction, pgvector retrieval,
 > the Neo4j relationship graph with hybrid vector+graph retrieval, the designed Flask
-> investigation UI, and the eDiscovery-readiness milestone (real-file ingestion, calibrated
-> evidence refusal, privilege/PII flags, search audit trail) are done — all with reproducible
-> evaluation. **Live demo:**
+> investigation UI, the eDiscovery-readiness milestone (real-file ingestion, calibrated
+> evidence refusal, privilege/PII flags, search audit trail), and the case-study layer
+> (guided-tour landing page, per-citation source-document view, label glossary) are done —
+> all with reproducible evaluation. **Live demo:**
 > [legal-discovery-intelligence-graph.onrender.com](https://legal-discovery-intelligence-graph.onrender.com)
 > (Render free tier; a keep-alive workflow reduces cold starts — see
 > [docs/SCALING.md](docs/SCALING.md)). The earlier Streamlit dashboard also remains available
@@ -60,6 +61,10 @@ trail — backed by a reproducible precision/recall/F1 evaluation harness.
   manifest (ADR-0021). Offline by design (free-tier RAM — [docs/SCALING.md](docs/SCALING.md)).
 - **Search audit trail (implemented)** — every investigation search is recorded append-only in
   PostgreSQL and browsable at `/audit` (ADR-0022).
+- **Case-study experience (implemented)** — the landing page tells the Project Falcon matter,
+  guides a six-step decode of the corpus with prefilled gold-query searches, explains every
+  badge and score in a glossary, and links each citation to a full source-document view at
+  `/document/<id>` so any passage can be verified in context (ADR-0023).
 - **Reproducible evaluation** — gold-labeled synthetic corpus scored for extraction,
   retrieval, refusal, and flags precision/recall/F1
   (see [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md)).

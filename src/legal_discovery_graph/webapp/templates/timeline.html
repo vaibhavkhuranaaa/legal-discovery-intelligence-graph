@@ -40,7 +40,8 @@
                 </div>
               {% endif %}
               <footer class="rail-cite">
-                {{ event.document }}
+                <a href="{{ url_for('webapp.document', document_id=event.document_id) }}">
+                  {{ event.document }}</a>
               </footer>
             </div>
           </article>
@@ -64,7 +65,8 @@
               <td class="mono">{{ row.date }}</td>
               <td>{{ row.description }}</td>
               <td>{{ row.entities }}</td>
-              <td>{{ row.document }}</td>
+              <td><a href="{{ url_for('webapp.document', document_id=row.document_id) }}">
+                {{ row.document }}</a></td>
             </tr>
           {% endfor %}
         </tbody>
