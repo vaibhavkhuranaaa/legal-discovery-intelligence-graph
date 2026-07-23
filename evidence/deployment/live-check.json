@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "url": "https://legal-discovery-intelligence-graph.onrender.com",
+  "verifiedAt": "2026-07-23T20:52:19Z",
+  "httpStatus": 200,
+  "redirectsFollowed": true,
+  "result": "pass",
+  "limitations": [
+    "Root reachability only; not an availability, security, data-store, or production-SLO claim."
+  ]
+}

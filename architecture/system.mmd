@@ -1,0 +1,8 @@
+flowchart LR
+  Corpus["Synthetic corpus + gold labels"] --> Extract["Entity, event, privilege, and PII extraction"]
+  Extract --> Vector["PostgreSQL + pgvector"]
+  Extract --> Graph["Neo4j relationship graph"]
+  Vector --> Hybrid["Hybrid retriever + calibrated refusal"]
+  Graph --> Hybrid
+  Hybrid --> App["Read-only Flask investigation UI"]
+  App --> Evidence["Citations, graph, timeline, flags, and evaluation"]

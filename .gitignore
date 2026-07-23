@@ -54,3 +54,6 @@ logs/*
 .idea/
 .vscode/
 .claude/
+
+# Derived local agent context
+graphify-out/
