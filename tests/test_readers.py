@@ -21,7 +21,9 @@ def _make_minimal_pdf_bytes(text: str) -> bytes:
         b"3 0 obj\n<</Type/Page/Parent 2 0 R/Resources<</Font<</F1 4 0 R>>>>"
         b"/MediaBox[0 0 200 200]/Contents 5 0 R>>\nendobj\n",
         b"4 0 obj\n<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>\nendobj\n",
-        b"5 0 obj\n<</Length " + str(len(content)).encode() + b">>\nstream\n"
+        b"5 0 obj\n<</Length "
+        + str(len(content)).encode()
+        + b">>\nstream\n"
         + content
         + b"\nendstream\nendobj\n",
     ]
@@ -38,9 +40,7 @@ def _make_minimal_pdf_bytes(text: str) -> bytes:
     for offset in offsets:
         xref += f"{offset:010d} 00000 n \n".encode()
     trailer = (
-        b"trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n"
-        + str(xref_offset).encode()
-        + b"\n%%EOF"
+        b"trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n" + str(xref_offset).encode() + b"\n%%EOF"
     )
     return header + body + xref + trailer
 
@@ -66,9 +66,7 @@ def _make_blank_pdf_bytes() -> bytes:
     for offset in offsets:
         xref += f"{offset:010d} 00000 n \n".encode()
     trailer = (
-        b"trailer\n<</Size 4/Root 1 0 R>>\nstartxref\n"
-        + str(xref_offset).encode()
-        + b"\n%%EOF"
+        b"trailer\n<</Size 4/Root 1 0 R>>\nstartxref\n" + str(xref_offset).encode() + b"\n%%EOF"
     )
     return header + body + xref + trailer
 
@@ -113,9 +111,7 @@ class TestReadDocx:
 
         document, body = read_docx(docx_path, custodian="bob")
 
-        assert body == (
-            "Falcon project kickoff meeting.\n\nBudget approved by Jane Doe."
-        )
+        assert body == ("Falcon project kickoff meeting.\n\nBudget approved by Jane Doe.")
         assert document.doc_type == DocumentType.OTHER
         assert document.title == "notes"
         assert document.custodian == "bob"

@@ -36,8 +36,7 @@ NODE_LABELS: dict[EntityType, str] = {
 }
 
 _CONSTRAINTS = tuple(
-    f"CREATE CONSTRAINT {label.lower()}_id IF NOT EXISTS "
-    f"FOR (n:{label}) REQUIRE n.{key} IS UNIQUE"
+    f"CREATE CONSTRAINT {label.lower()}_id IF NOT EXISTS FOR (n:{label}) REQUIRE n.{key} IS UNIQUE"
     for label, key in (
         ("Document", "document_id"),
         ("Event", "event_id"),

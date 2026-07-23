@@ -116,9 +116,7 @@ class TestGoldQueryLoading:
                 "is_answerable": False,
             },
         ]
-        (tmp_path / "retrieval.jsonl").write_text(
-            "\n".join(json.dumps(row) for row in rows) + "\n"
-        )
+        (tmp_path / "retrieval.jsonl").write_text("\n".join(json.dumps(row) for row in rows) + "\n")
         queries = load_gold_queries(tmp_path)
         assert [query.query_id for query in queries] == ["q1", "q2"]
         assert queries[0].relevant_chunk_ids == frozenset({"c1", "c2"})
@@ -133,9 +131,7 @@ class TestStoreHelpers:
         assert [float(v) for v in literal[1:-1].split(",")] == [0.1234567891234, 2.0]
 
     def test_to_sqlalchemy_url_pins_psycopg_driver(self):
-        assert to_sqlalchemy_url("postgresql://u:p@h:5432/db").startswith(
-            "postgresql+psycopg://"
-        )
+        assert to_sqlalchemy_url("postgresql://u:p@h:5432/db").startswith("postgresql+psycopg://")
         already = "postgresql+psycopg://u:p@h/db"
         assert to_sqlalchemy_url(already) == already
 
@@ -149,9 +145,7 @@ class TestRefusalCalibration:
             _query(query_id, {"gold"} if answerable else set())
             for query_id, (_, answerable) in scores.items()
         ]
-        results = {
-            query_id: [RankedHit("chunk", score)] for query_id, (score, _) in scores.items()
-        }
+        results = {query_id: [RankedHit("chunk", score)] for query_id, (score, _) in scores.items()}
         return calibrate_refusal_threshold(queries, results)
 
     def test_separable_scores_yield_perfect_threshold(self):

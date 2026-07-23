@@ -55,6 +55,7 @@ def cytoscape_elements(elements: GraphElements) -> list[dict]:
     ]
     return nodes + edges
 
+
 _VECTOR_COLOR = "#2a78d6"
 _HYBRID_COLOR = "#a8762a"
 _MODES = (

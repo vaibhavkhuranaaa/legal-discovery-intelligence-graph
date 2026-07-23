@@ -204,9 +204,7 @@ class TestInvestigateSearch:
         )
         _stub_search(
             monkeypatch,
-            backend.InvestigationOutcome(
-                result=_result(ranked, graph_available=False), error=None
-            ),
+            backend.InvestigationOutcome(result=_result(ranked, graph_available=False), error=None),
         )
         response = client.get("/investigate?q=who+paid")
         assert "Graph expansion is unavailable" in response.text
@@ -280,8 +278,7 @@ class TestInvestigateSearch:
             document_id="doc-p1",
             sequence=0,
             text=(
-                "PRIVILEGED AND CONFIDENTIAL — remit to account number 0004482913 "
-                "for the retainer."
+                "PRIVILEGED AND CONFIDENTIAL — remit to account number 0004482913 for the retainer."
             ),
             metadata={"title": "Counsel email", "doc_type": "email"},
             score=0.9,
@@ -563,9 +560,7 @@ class TestAuditPage:
 
 
 class TestEvaluationPage:
-    def test_committed_artifacts_render_score_chart_and_details(
-        self, client: FlaskClient
-    ) -> None:
+    def test_committed_artifacts_render_score_chart_and_details(self, client: FlaskClient) -> None:
         # Uses the real committed artifacts in artifacts/ — no fabrication.
         import json
         from pathlib import Path
