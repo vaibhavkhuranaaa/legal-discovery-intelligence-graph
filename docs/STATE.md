@@ -4,7 +4,7 @@
 - Deployment: `live`
 - Exposure: `anonymous`
 - Production claim: `false`
-- Publication: approved legacy v1 SHA; local v2 replacement awaits commit, push, preview, and registry approval
+- Publication: approved legacy v1 SHA; v2 replacement is in draft PR 1 and awaits exact-SHA preview and registry approval
 - Evidence: extraction, retrieval, flags, synthetic disclosure, and a 2026-07-23 root reachability check
 
 The Render root returned HTTP 200 at `2026-07-23T20:52:19Z`. This is reachability evidence only. The corpus is entirely generated and fictional; the public app is not a real-client security or legal-decision system.
