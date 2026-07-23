@@ -493,7 +493,10 @@ class TestAuditPage:
         assert recorded[0]["result_count"] == 1
 
     def test_rows_render_in_table(
-        self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
+        self,
+        client: FlaskClient,
+        configured_db: None,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         rows = (
             {
@@ -527,7 +530,10 @@ class TestAuditPage:
         assert "412 ms" in response.text
 
     def test_unavailable_store_shows_reason(
-        self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
+        self,
+        client: FlaskClient,
+        configured_db: None,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr(
             backend,
@@ -537,6 +543,23 @@ class TestAuditPage:
         response = client.get("/audit")
         assert "could not be read" in response.text
         assert "OperationalError: db down" in response.text
+
+    def test_unconfigured_store_is_explicit(
+        self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            backend,
+            "backend_status",
+            lambda: backend.BackendStatus(
+                database_configured=False,
+                graph_configured=False,
+                embedding_model="test-model",
+            ),
+        )
+        response = client.get("/audit")
+        assert response.status_code == 200
+        assert "could not be read" in response.text
+        assert "DATABASE_URL is not configured" in response.text
 
 
 class TestEvaluationPage:
