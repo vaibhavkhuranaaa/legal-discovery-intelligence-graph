@@ -1,97 +1,22 @@
-# AGENTS.md
+# Legal Discovery Intelligence Graph agent contract
 
-This file provides guidance to coding agents (Codex, Claude Code, and similar) when working with code in this
-repository. It is the permanent operating manual for how to work here — not a project description.
+## Authority
 
-## Imported Standards
+- Current implementation and release state: `docs/STATE.md`.
+- Continuation instructions: `docs/HANDOFF.md`.
+- Architecture, decisions, product scope, and deployment: `docs/PROJECT_CONTEXT.md`, `docs/roadmap.md`, `docs/architecture.md`, `docs/decisions.md`, `docs/product.md`, and deployment records.
+- Public facts, evidence, disclosure, deployment classification, and résumé candidates: `portfolio/project.json`.
+- Engineering, Python, AI, Git, portfolio, debugging, and deployment rules: the numbered files in `docs/standards/`.
 
-The following standards in `docs/standards/` are part of this operating manual and must be
-followed:
+## Working rules
 
-- @docs/standards/01_Engineering_Constitution.md
-- @docs/standards/02_Python_Standards.md
-- @docs/standards/04_AI_Engineering_Standards.md
-- @docs/standards/05_Git_GitHub_Workflow.md
-- @docs/standards/07_Portfolio_Standards.md
-- @docs/standards/09_Debugging_Playbook.md
-- @docs/standards/10_Deployment_Standards.md
+- Query fresh `graphify-out/` context first when it covers the relevant files; otherwise inspect source directly.
+- Use only synthetic, public-safe corpus data. Never introduce real discovery, client, confidential, privileged, or personal matter data.
+- Do not promote extraction/retrieval metrics or root reachability into legal accuracy, availability, confidentiality, security, or production-readiness claims.
+- Preserve unrelated dirty work. Use Python 3.12+, `uv`, `pyproject.toml`, the `src/` layout, Pydantic contracts, and deterministic tests.
+- `requirements.txt` is a generated hosting artifact; never hand-edit it.
+- Use purpose branches, conventional commits, and the configured human identity only; never add AI/model author or co-author attribution.
+- Preview, publication approval, merge, deployment, public visibility, paid resources, and backend changes are separate owner-gated actions.
+- Delegation is optional and must be bounded.
 
-## Overview
-
-This repository contains **Legal Discovery Intelligence Graph** — a production-grade Graph RAG
-portfolio project for eDiscovery investigation: entity extraction, pgvector semantic retrieval,
-Neo4j relationship analysis, timeline analysis, and reproducible evaluation. It is intended for
-public deployment in Milestone 6 on Streamlit Community Cloud with Supabase
-(PostgreSQL + pgvector) and Neo4j AuraDB backends; nothing is deployed until that milestone is
-completed and verified.
-
-Only synthetic, public-safe data may be used. Never introduce real, confidential, proprietary, or
-client data into this repository.
-
-Current status, roadmap, architecture, decisions, and product scope live in
-`docs/PROJECT_CONTEXT.md`, `docs/roadmap.md`, `docs/architecture.md`, `docs/decisions.md`, and
-`docs/product.md`. Those documents are the source of truth for planning — do not duplicate their
-content here.
-
-## Development Workflow
-
-Always work in clearly defined phases. For every phase:
-
-1. Understand the objective.
-2. Explain the proposed implementation and important architectural tradeoffs.
-3. Wait for approval.
-4. Implement only the approved scope.
-5. Verify changes (tests, lint, and — where applicable — actually running the app).
-6. Update documentation affected by the change.
-7. Summarize completed work and **stop**. Wait before beginning the next phase.
-
-Never skip phases. Do not implement future phases early.
-
-## Engineering Principles
-
-- Never fabricate functionality, evaluation metrics, benchmarks, services, deployments, data,
-  credentials, or API/SDK behavior. Every claim in code or docs must be verified by actually
-  running it.
-- Prefer readable, explicit code over clever or implicit behavior.
-- Keep modules small, focused, and cohesive; favor composition over unnecessary abstraction.
-- Record every significant technical choice as an ADR in `docs/decisions.md`.
-
-## Python & Tooling Standards
-
-- Python 3.12+ only.
-- Use `uv` exclusively for environments and dependencies; `pyproject.toml` + `uv.lock` are the
-  source of truth. **Never use `pip` or install into system Python.** `requirements.txt` is
-  generated via `uv export` for Streamlit Community Cloud only — never hand-edit it.
-- `src/` layout (`src/legal_discovery_graph/`), Hatchling build backend.
-- Type hints everywhere; Pydantic models for data contracts.
-- Verification commands: `uv run pytest`, `uv run ruff check .`,
-  `uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py`.
-
-## Git Standards
-
-- Recommend Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`), but
-  **do not create commits** unless explicitly requested.
-- Never include AI co-author trailers unless explicitly requested.
-- Before recommending a commit, verify: Ruff passes, pytest passes, docs are updated, no secrets
-  present.
-
-## Security & Data Standards
-
-- Never hardcode credentials or commit `.env`, `.streamlit/secrets.toml`, generated data, vector
-  artifacts, or large binaries. All secrets come from environment variables / Streamlit secrets;
-  templates (`.env.example`, `.streamlit/secrets.toml.example`) contain blank placeholders only.
-- All corpus data is synthetic, generated on demand by `scripts/bootstrap_data.py` (Milestone 1)
-  and gitignored. Names, companies, and events must be fictional; never add real data.
-
-## Documentation Standards
-
-Documentation evolves with implementation: update `docs/architecture.md` when architecture
-changes, add ADRs to `docs/decisions.md` for significant choices, update `docs/roadmap.md` when
-milestones complete, and keep `docs/PROJECT_CONTEXT.md` an accurate, verified handoff at all
-times. Never let documentation claim more than what has actually been built and verified.
-
-## Communication Style
-
-Explain why, keep explanations concise, recommend the best engineering solution with its
-tradeoffs, avoid unnecessary implementation questions, and stop after each approved milestone.
-Act as a senior software engineer collaborating on a production repository.
+Run Ruff and the repository tests before handoff. Update state, handoff, architecture/ADR documentation, deployment evidence, and the manifest whenever their owning facts change.
