@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "package": "simple-icons",
+    "version": "16.27.0",
+    "license": "CC0-1.0",
+    "url": "https://simpleicons.org"
+  },
+  "technologies": [
+    {
+      "name": "Python",
+      "icon": "portfolio/assets/technology/python.svg",
+      "role": "Application, extraction, and evaluation language",
+      "provenance": "Simple Icons 16.27.0 (CC0-1.0)"
+    },
+    {
+      "name": "Flask",
+      "icon": "portfolio/assets/technology/flask.svg",
+      "role": "Read-only investigation interface",
+      "provenance": "Simple Icons 16.27.0 (CC0-1.0)"
+    },
+    {
+      "name": "LangChain",
+      "icon": "portfolio/assets/technology/langchain.svg",
+      "role": "Hybrid retrieval orchestration",
+      "provenance": "Simple Icons 16.27.0 (CC0-1.0)"
+    },
+    {
+      "name": "sentence-transformers",
+      "icon": "portfolio/assets/technology/sentence-transformers.svg",
+      "role": "Embedding model",
+      "provenance": "Simple Icons 16.27.0 (CC0-1.0)"
+    },
+    {
+      "name": "ONNX Runtime",
+      "icon": "portfolio/assets/technology/onnx-runtime.svg",
+      "role": "Memory-bounded deployed inference",
+      "provenance": "Simple Icons 16.27.0 (CC0-1.0)"
+    },
+    {
+      "name": "PostgreSQL + pgvector",
+      "icon": "portfolio/assets/technology/postgresql-plus-pgvector.svg",
+      "role": "Vector retrieval store",
+      "provenance": "Simple Icons 16.27.0 (CC0-1.0)"
+    },
+    {
+      "name": "Neo4j AuraDB",
+      "icon": "portfolio/assets/technology/neo4j-auradb.svg",
+      "role": "Relationship graph",
+      "provenance": "Simple Icons 16.27.0 (CC0-1.0)"
+    },
+    {
+      "name": "Supabase",
+      "icon": "portfolio/assets/technology/supabase.svg",
+      "role": "Hosted PostgreSQL provider",
+      "provenance": "Simple Icons 16.27.0 (CC0-1.0)"
+    },
+    {
+      "name": "Plotly",
+      "icon": "portfolio/assets/technology/plotly.svg",
+      "role": "Timeline and analytical visuals",
+      "provenance": "Simple Icons 16.27.0 (CC0-1.0)"
+    }
+  ]
+}

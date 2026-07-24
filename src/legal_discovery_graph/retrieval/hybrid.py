@@ -152,9 +152,7 @@ class HybridRetriever:
 
     def search(self, question: str, limit: int = 10, seed_limit: int = 5) -> HybridResult:
         """Run the hybrid pipeline; top ``seed_limit`` vector hits seed the graph."""
-        return self._chain.invoke(
-            {"question": question, "limit": limit, "seed_limit": seed_limit}
-        )
+        return self._chain.invoke({"question": question, "limit": limit, "seed_limit": seed_limit})
 
     def _vector_leg(self, state: dict[str, Any]) -> dict[str, Any]:
         embedding = self._embedder.embed_query(state["question"])

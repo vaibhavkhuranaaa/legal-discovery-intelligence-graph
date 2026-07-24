@@ -30,9 +30,7 @@ _EMAIL_RE = re.compile(r"\b[\w.+-]+@(?P<domain>[\w-]+(?:\.[\w-]+)+)\b")
 # --- PII patterns -----------------------------------------------------------
 
 _SSN_HYPHENATED_RE = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
-_SSN_CONTEXT_RE = re.compile(
-    r"(?:SSN|social security).{0,40}?\b\d{9}\b", re.IGNORECASE | re.DOTALL
-)
+_SSN_CONTEXT_RE = re.compile(r"(?:SSN|social security).{0,40}?\b\d{9}\b", re.IGNORECASE | re.DOTALL)
 _BANK_ACCOUNT_CONTEXT_RE = re.compile(
     r"(?:account\s*number|account\s*no\.?|acct\.?|IBAN).{0,40}?\b\d{8,12}\b",
     re.IGNORECASE | re.DOTALL,

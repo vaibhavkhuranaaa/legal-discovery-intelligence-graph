@@ -97,7 +97,7 @@ TOUR_STEPS: tuple[dict, ...] = (
         "question": "When did the internal audit of Project Falcon procurement begin?",
         "note": (
             "The unraveling. Audit and outside-counsel material carries a "
-            "\"potentially privileged\" badge: rule-based markers, flagged for "
+            '"potentially privileged" badge: rule-based markers, flagged for '
             "review, never withheld."
         ),
     },

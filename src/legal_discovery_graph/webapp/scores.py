@@ -20,8 +20,7 @@ class TotalScore:
     hybrid_hit_rate_at_10: float  # graph-expanded overall hit-rate@10
 
     FORMULA = (
-        "mean of extraction micro-F1 (strict), event F1, "
-        "hybrid recall@10, and hybrid hit-rate@10"
+        "mean of extraction micro-F1 (strict), event F1, hybrid recall@10, and hybrid hit-rate@10"
     )
 
 

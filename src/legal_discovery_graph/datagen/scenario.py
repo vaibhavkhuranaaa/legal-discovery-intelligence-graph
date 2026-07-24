@@ -929,8 +929,7 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
             DraftEvent(
                 occurred_at=dt(2023, 9, 20),
                 description=(
-                    "Daniel Reyes orders Crestline payments paused while the internal "
-                    "audit is open"
+                    "Daniel Reyes orders Crestline payments paused while the internal audit is open"
                 ),
                 entities=[cast.reyes, cast.tran, cast.crestline],
             )
@@ -1097,9 +1096,7 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
         events=[
             DraftEvent(
                 occurred_at=dt(2023, 11, 20),
-                description=(
-                    "Meridian terminates the Northgate master supply agreement for cause"
-                ),
+                description=("Meridian terminates the Northgate master supply agreement for cause"),
                 entities=[cast.ellison, cast.meridian, cast.northgate],
             )
         ],
@@ -1196,8 +1193,7 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
             DraftEvent(
                 occurred_at=dt(2023, 4, 14),
                 description=(
-                    "Northgate ACH payment authorization executed for Project Falcon "
-                    "invoicing"
+                    "Northgate ACH payment authorization executed for Project Falcon invoicing"
                 ),
                 entities=[cast.tran, cast.northgate, cast.falcon],
             )
@@ -1311,8 +1307,7 @@ def build_planted_documents(cast: Cast) -> tuple[list[DraftDocument], list[Draft
             DraftEvent(
                 occurred_at=dt(2023, 11, 13),
                 description=(
-                    "Outside counsel meets with internal audit to plan the "
-                    "investigation interviews"
+                    "Outside counsel meets with internal audit to plan the investigation interviews"
                 ),
                 entities=[cast.pace, cast.sharma, cast.hartwell_pace],
             )

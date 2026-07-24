@@ -122,9 +122,7 @@ class TestGraphElements:
         assert all(e.chunk_id == "g" for e in elements.edges)
 
     def test_duplicate_evidence_rows_deduplicate(self):
-        ranked = (
-            RankedChunk(_chunk("g"), 1.0, ("graph",), (_evidence("g"), _evidence("g"))),
-        )
+        ranked = (RankedChunk(_chunk("g"), 1.0, ("graph",), (_evidence("g"), _evidence("g"))),)
         elements = graph_elements(_result(ranked))
         assert len(elements.edges) == 1
 

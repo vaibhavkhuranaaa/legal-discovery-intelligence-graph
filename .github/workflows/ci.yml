@@ -25,3 +25,6 @@ jobs:
 
       - name: Test
         run: uv run pytest
+
+      - name: Validate generated project presentation
+        run: node scripts/project-presentation.mjs validate --check

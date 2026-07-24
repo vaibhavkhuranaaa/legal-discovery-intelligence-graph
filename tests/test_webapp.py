@@ -204,9 +204,7 @@ class TestInvestigateSearch:
         )
         _stub_search(
             monkeypatch,
-            backend.InvestigationOutcome(
-                result=_result(ranked, graph_available=False), error=None
-            ),
+            backend.InvestigationOutcome(result=_result(ranked, graph_available=False), error=None),
         )
         response = client.get("/investigate?q=who+paid")
         assert "Graph expansion is unavailable" in response.text
@@ -280,8 +278,7 @@ class TestInvestigateSearch:
             document_id="doc-p1",
             sequence=0,
             text=(
-                "PRIVILEGED AND CONFIDENTIAL — remit to account number 0004482913 "
-                "for the retainer."
+                "PRIVILEGED AND CONFIDENTIAL — remit to account number 0004482913 for the retainer."
             ),
             metadata={"title": "Counsel email", "doc_type": "email"},
             score=0.9,
@@ -493,7 +490,10 @@ class TestAuditPage:
         assert recorded[0]["result_count"] == 1
 
     def test_rows_render_in_table(
-        self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
+        self,
+        client: FlaskClient,
+        configured_db: None,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         rows = (
             {
@@ -527,7 +527,10 @@ class TestAuditPage:
         assert "412 ms" in response.text
 
     def test_unavailable_store_shows_reason(
-        self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
+        self,
+        client: FlaskClient,
+        configured_db: None,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr(
             backend,
@@ -538,11 +541,26 @@ class TestAuditPage:
         assert "could not be read" in response.text
         assert "OperationalError: db down" in response.text
 
+    def test_unconfigured_store_is_explicit(
+        self, client: FlaskClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            backend,
+            "backend_status",
+            lambda: backend.BackendStatus(
+                database_configured=False,
+                graph_configured=False,
+                embedding_model="test-model",
+            ),
+        )
+        response = client.get("/audit")
+        assert response.status_code == 200
+        assert "could not be read" in response.text
+        assert "DATABASE_URL is not configured" in response.text
+
 
 class TestEvaluationPage:
-    def test_committed_artifacts_render_score_chart_and_details(
-        self, client: FlaskClient
-    ) -> None:
+    def test_committed_artifacts_render_score_chart_and_details(self, client: FlaskClient) -> None:
         # Uses the real committed artifacts in artifacts/ — no fabrication.
         import json
         from pathlib import Path

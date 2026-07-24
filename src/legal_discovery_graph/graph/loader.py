@@ -184,8 +184,10 @@ def build_graph_payload(
                     chunk = chunk_for_offset(
                         chunks_by_document.get(document.document_id, []), offset
                     )
-                    chunk_id = chunk.chunk_id if chunk is not None else mention_chunks.get(
-                        (document.document_id, entity_id)
+                    chunk_id = (
+                        chunk.chunk_id
+                        if chunk is not None
+                        else mention_chunks.get((document.document_id, entity_id))
                     )
                     if chunk_id is None:
                         continue
@@ -223,9 +225,7 @@ def build_graph_payload(
 
     events = tuple(
         GraphEvent(
-            event_id=stable_id(
-                "event", event.document_id, event.occurred_at.date().isoformat()
-            ),
+            event_id=stable_id("event", event.document_id, event.occurred_at.date().isoformat()),
             document_id=event.document_id,
             occurred_at=event.occurred_at,
             description=event.description,
