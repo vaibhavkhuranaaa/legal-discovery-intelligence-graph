@@ -6,6 +6,7 @@ services:
     name: legal-discovery-intelligence-graph
     runtime: python
     plan: free
+    autoDeployTrigger: off
     # requirements-render.txt is the full locked closure minus torch/streamlit/
     # spacy (ADR-0015) — --no-deps stops pip re-resolving the pruned packages
     # back in via the project's own dependency list.
