@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "status": "enabled",
+  "provider": "Render",
+  "workflow": "deploy.yml",
+  "deploymentTarget": "legal-discovery-intelligence-graph",
+  "paidResource": false,
+  "costApprovalRequired": false
+}

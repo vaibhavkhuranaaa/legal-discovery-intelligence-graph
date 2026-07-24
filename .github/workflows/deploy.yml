@@ -1,0 +1,81 @@
+name: Deploy approved eDiscovery revision
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Approved 40-character source revision
+        required: true
+        type: string
+      approval_timestamp:
+        description: Owner approval time in ISO-8601 UTC
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: legal-discovery-production-release
+  cancel-in-progress: false
+
+env:
+  LIVE_URL: https://legal-discovery-intelligence-graph.onrender.com
+
+jobs:
+  deploy:
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+      - name: Verify approved revision
+        run: |
+          test "$(git rev-parse HEAD)" = "${{ inputs.source_sha }}"
+          test "$(printf '%s' '${{ inputs.source_sha }}' | wc -c)" -eq 40
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --locked --group dev
+      - run: uv run ruff check . && uv run pytest -q
+      - name: Trigger protected Render deployment
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK"
+      - name: Verify exact deployed revision
+        run: |
+          for attempt in $(seq 1 45); do
+            payload="$(curl --fail --silent --show-error "$LIVE_URL/healthz" || true)"
+            if printf '%s' "$payload" | jq -e --arg sha "${{ inputs.source_sha }}" '.status == "ok" and .source_sha == $sha' >/dev/null; then
+              break
+            fi
+            test "$attempt" -lt 45
+            sleep 15
+          done
+          curl --fail --silent --show-error --output /dev/null "$LIVE_URL/"
+          curl --fail --silent --show-error --output /dev/null "$LIVE_URL/timeline"
+          curl --fail --silent --show-error --output /dev/null "$LIVE_URL/audit"
+      - name: Write release receipt
+        run: |
+          mkdir -p artifacts
+          jq -n \
+            --arg sourceSha "${{ inputs.source_sha }}" \
+            --arg approvedAt "${{ inputs.approval_timestamp }}" \
+            --arg deployedAt "$(date -u +%FT%TZ)" \
+            --arg liveUrl "$LIVE_URL" \
+            '{version:1, provider:"Render", sourceSha:$sourceSha, approvedAt:$approvedAt, deployedAt:$deployedAt, liveUrl:$liveUrl, verified:true}' \
+            > artifacts/release-receipt.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: legal-discovery-release-${{ inputs.source_sha }}
+          path: artifacts/release-receipt.json
+          if-no-files-found: error
+      - name: Request exact-SHA portfolio admission
+        env:
+          GH_TOKEN: ${{ secrets.PORTFOLIO_DISPATCH_TOKEN }}
+          PORTFOLIO_REPOSITORY: ${{ vars.PORTFOLIO_REPOSITORY }}
+        run: >
+          gh api --method POST "repos/${PORTFOLIO_REPOSITORY}/dispatches"
+          -f event_type=project-manifest-ready
+          -f client_payload[repository]="$GITHUB_REPOSITORY"
+          -f client_payload[ref]="${{ inputs.source_sha }}"
+          -f client_payload[manifest_path]="portfolio/project.json"
