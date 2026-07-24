@@ -324,8 +324,6 @@ These are standing agreements with the repository owner, beyond what CLAUDE.md m
 
 ## Open Items
 
-- **User-side:** create the `PORTFOLIO_DISPATCH_TOKEN` GitHub Actions secret so
-  `portfolio-dispatch.yml` can succeed (the repo had no Actions secrets as of July 2026).
 - Optional future work recorded in docs: fix the hybrid-@10 regression (cap graph
   contributions per query or weight by seed rank); add authentication so the audit trail can
   record the actor.

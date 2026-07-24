@@ -4,6 +4,11 @@
   "provider": "Render",
   "workflow": "deploy.yml",
   "deploymentTarget": "legal-discovery-intelligence-graph",
+  "publicProject": true,
+  "verification": {
+    "url": "https://legal-discovery-intelligence-graph.onrender.com/healthz",
+    "sourceShaField": "source_sha"
+  },
   "paidResource": false,
   "costApprovalRequired": false
 }
