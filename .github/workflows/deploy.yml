@@ -37,10 +37,15 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --locked --group dev
       - run: uv run ruff check . && uv run pytest -q
-      - name: Trigger protected Render deployment
+      - name: Trigger protected Render deployment when configured
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
-        run: curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK"
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK"
+          else
+            echo "No deploy hook configured; verifying the exact SHA delivered by Render Git auto-deploy."
+          fi
       - name: Verify exact deployed revision
         run: |
           for attempt in $(seq 1 45); do
@@ -75,7 +80,7 @@ jobs:
           PORTFOLIO_REPOSITORY: ${{ vars.PORTFOLIO_REPOSITORY }}
         run: >
           gh api --method POST "repos/${PORTFOLIO_REPOSITORY}/dispatches"
-          -f event_type=project-manifest-ready
+          -f event_type=project-release-ready
           -f client_payload[repository]="$GITHUB_REPOSITORY"
           -f client_payload[ref]="${{ inputs.source_sha }}"
           -f client_payload[manifest_path]="portfolio/project.json"
