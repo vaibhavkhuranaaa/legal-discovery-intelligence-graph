@@ -1,142 +1,180 @@
 # Legal Discovery Intelligence Graph
 
-**GitHub:** [vaibhavkhuranaaa/legal-discovery-intelligence-graph](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph)
+[![CI](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph/actions/workflows/ci.yml/badge.svg)](https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph/actions/workflows/ci.yml) ![Publication](https://img.shields.io/badge/publication-review_required-5b6470) ![Production claim](https://img.shields.io/badge/production_claim-no-18794e)
 
-> **Status: deployed — Milestones 0–11 complete.** Foundation, the synthetic corpus
-> generator (deterministic corpus + gold labels), entity/event extraction, pgvector retrieval,
-> the Neo4j relationship graph with hybrid vector+graph retrieval, the designed Flask
-> investigation UI, the eDiscovery-readiness milestone (real-file ingestion, calibrated
-> evidence refusal, privilege/PII flags, search audit trail), and the case-study layer
-> (guided-tour landing page, per-citation source-document view, label glossary) are done —
-> all with reproducible evaluation. **Live demo:**
-> [legal-discovery-intelligence-graph.onrender.com](https://legal-discovery-intelligence-graph.onrender.com)
-> (Render free tier; a keep-alive workflow reduces cold starts — see
-> [docs/SCALING.md](docs/SCALING.md)). The earlier Streamlit dashboard also remains available
-> [on Community Cloud](https://legal-discovery-intelligence-graph-ma2dfvnresf84ytk4nzelm.streamlit.app/).
->
-> **Measured results** (455-document synthetic corpus, seed 42, run 2026-07-15):
-> entity-mention extraction micro **F1 0.887 strict / 0.899 relaxed**; event extraction
-> **F1 1.000**; vector-only retrieval **R@10 0.857 / hit@10 0.929**; graph-expanded retrieval
-> **R@10 0.857 / hit@10 0.893**, lifting relationship-query **hit@5 from 0.500 to 0.833** but
-> now measurably *hurting* overall @10 on the denser corpus (a real finding about rank
-> interleaving on hub-dense graphs — see the honest reading in
-> [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md)). Evidence refusal calibrated at
-> top-1 cosine **0.5089** (7/10 negatives refused, 2/28 false refusals); privilege/PII flags
-> **P/R/F1 1.0** on clean synthetic text. Reproduce with `bootstrap_data.py`,
-> `evaluate_extraction.py`, `index_pgvector.py`, `load_neo4j.py`, `evaluate_retrieval.py`,
-> and `evaluate_flags.py`; all scores are inflated by clean templated text.
+> A deployed Graph RAG investigation workspace with cited evidence, entity graphs, and reproducible evaluation.
 
-A **Graph RAG eDiscovery investigation platform**. Given a corpus of discovery documents
-(emails, contracts, memos, invoices, meeting notes), it extracts entities and events, indexes
-document chunks for semantic retrieval in **PostgreSQL + pgvector**, models
-entity/document/event relationships in **Neo4j AuraDB**, and serves an investigator-facing
-**Flask web app** that answers questions with cited evidence (or an explicit calibrated
-refusal), privilege/PII flags, an interactive entity graph, a case timeline, and an audit
-trail — backed by a reproducible precision/recall/F1 evaluation harness.
+## Executive overview
 
-## Capabilities
+| Question | Reviewed fact |
+| --- | --- |
+| Problem | How can an investigator move from a large discovery record to evidence they can inspect and trace? |
+| Intended user | A legal-technology reviewer or discovery analyst evaluating evidence retrieval and relationship navigation. |
+| Decision supported | Whether a relationship or event is supported by cited evidence in the fictional matter. |
+| Outcome | A public synthetic-matter investigation workflow combines vector and graph retrieval, cited evidence, timelines, privilege/PII flags, calibrated refusal, and an auditable case brief. |
+| Try it | [Open the reviewed demo](https://legal-discovery-intelligence-graph.onrender.com) |
+| Important boundary | All documents, people, companies, amounts, identifiers, and events are synthetic and fictional. Metrics are reproducible results on templated synthetic text and are not claims about real legal matters, privilege determinations, or production discovery performance. |
 
-- **Entity extraction** — spaCy NER plus deterministic regex extraction (amounts, dates,
-  invoice/account identifiers) with entity resolution across documents.
-- **Semantic retrieval (implemented)** — Hugging Face sentence-transformer embeddings over
-  document chunks, stored and queried in Supabase pgvector.
-- **Graph investigation (implemented)** — Neo4j relationship model (people ↔ organizations ↔
-  documents ↔ events, every edge carrying chunk-level provenance) enabling "who communicated
-  with whom about what, when" expansion around retrieved evidence.
-- **Hybrid Graph RAG orchestration (implemented)** — deterministic LangChain pipeline: vector
-  hits seed graph expansion, results interleave with full evidence trails, and the vector leg
-  keeps working (with an explicit notice) if Neo4j is unavailable.
-- **Investigation dashboard (implemented)** — Streamlit UI with cited evidence (vector/graph
-  source badges, cosine scores, graph evidence trails), an interactive Plotly entity graph,
-  an extracted-event timeline, an evaluation metrics panel, and explicit degraded states when
-  a backend is down. No LLM answer generation — evidence only.
-- **Calibrated evidence refusal (implemented)** — searches whose best match falls below a
-  measured cosine threshold render an explicit "no supporting evidence" state (with an
-  override) instead of best-effort matches (ADR-0019).
-- **Privilege & PII flags (implemented)** — rule-based detection of privilege markers,
-  outside-counsel correspondence, and SSN/bank/routing PII, badged on evidence cards and
-  measured against gold labels (ADR-0020).
-- **Real-file ingestion (implemented)** — `scripts/ingest_files.py` brings PDF/DOCX/EML files
-  into the same pipeline: SHA-256 dedup, Bates-style control numbers, and a chain-of-custody
-  manifest (ADR-0021). Offline by design (free-tier RAM — [docs/SCALING.md](docs/SCALING.md)).
-- **Search audit trail (implemented)** — every investigation search is recorded append-only in
-  PostgreSQL and browsable at `/audit` (ADR-0022).
-- **Case-study experience (implemented)** — the landing page tells the Project Falcon matter,
-  guides a six-step decode of the corpus with prefilled gold-query searches, explains every
-  badge and score in a glossary, and links each citation to a full source-document view at
-  `/document/<id>` so any passage can be verified in context (ADR-0023).
-- **Reproducible evaluation** — gold-labeled synthetic corpus scored for extraction,
-  retrieval, refusal, and flags precision/recall/F1
-  (see [docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md)).
+## What the system does
 
-## Technology Stack
+- Deterministic synthetic corpus and gold-label generation
+- Real-file ingestion for PDF, DOCX, and EML
+- Entity, event, privilege, and synthetic-PII extraction
+- PostgreSQL pgvector indexing and Neo4j graph loading
+- Hybrid retrieval with calibrated refusal and cited evidence
+- Flask investigation UI with graph, timeline, evaluation, and case brief
 
-| Layer | Technology |
-|---|---|
-| Language / tooling | Python 3.12, [uv](https://docs.astral.sh/uv/), Ruff, pytest, Hatchling (src layout) |
-| UI | Flask + Jinja (product UI, cytoscape.js graph), Streamlit + Plotly (legacy) |
-| Orchestration | LangChain |
-| Embeddings | Hugging Face sentence-transformers |
-| Vector store | PostgreSQL + pgvector (hosted on Supabase) |
-| Graph store | Neo4j AuraDB (official Neo4j Python driver) |
-| Extraction | spaCy + deterministic regex |
-| Data contracts | Pydantic / Pydantic Settings, SQLAlchemy + psycopg |
-| Hosting | Render (Flask product UI), Streamlit Community Cloud (legacy), GitHub |
+## Visual architecture
 
-Architecture details: [docs/architecture.md](docs/architecture.md) · Data model:
-[docs/DATA_MODEL.md](docs/DATA_MODEL.md) · Decisions (ADRs): [docs/decisions.md](docs/decisions.md)
+![System architecture showing a reviewer, synthetic discovery inputs, validation and extraction, vector and graph stores, hybrid retrieval, security boundary, observability, Render deployment, cited outputs, and the evaluation loop.](portfolio/assets/system.svg)
 
-## Local Setup
+Canonical editable source: [`architecture/system.mmd`](architecture/system.mmd). The SVG and PNG are deterministic generated assets; `system.freshness.json` records their source hash and renderer.
 
-Requires [uv](https://docs.astral.sh/uv/getting-started/installation/) (no pip, no system
-Python installs).
+## End-to-end workflow
+
+- Open the fictional matter and choose a guided investigation question
+- Review hybrid search results and the calibrated evidence/refusal state
+- Traverse related entities and events in the graph and timeline
+- Open cited synthetic documents and compare the result with committed evaluation
+
+## Technology stack
+
+| Technology | Role | Asset provenance |
+| --- | --- | --- |
+| <img src="portfolio/assets/technology/python.svg" width="20" height="20" alt="" /> Python | Application, extraction, and evaluation language | Simple Icons 16.27.0 (CC0-1.0) |
+| <img src="portfolio/assets/technology/flask.svg" width="20" height="20" alt="" /> Flask | Read-only investigation interface | Simple Icons 16.27.0 (CC0-1.0) |
+| <img src="portfolio/assets/technology/langchain.svg" width="20" height="20" alt="" /> LangChain | Hybrid retrieval orchestration | Simple Icons 16.27.0 (CC0-1.0) |
+| <img src="portfolio/assets/technology/sentence-transformers.svg" width="20" height="20" alt="" /> sentence-transformers | Embedding model | Simple Icons 16.27.0 (CC0-1.0) |
+| <img src="portfolio/assets/technology/onnx-runtime.svg" width="20" height="20" alt="" /> ONNX Runtime | Memory-bounded deployed inference | Simple Icons 16.27.0 (CC0-1.0) |
+| <img src="portfolio/assets/technology/postgresql-plus-pgvector.svg" width="20" height="20" alt="" /> PostgreSQL + pgvector | Vector retrieval store | Simple Icons 16.27.0 (CC0-1.0) |
+| <img src="portfolio/assets/technology/neo4j-auradb.svg" width="20" height="20" alt="" /> Neo4j AuraDB | Relationship graph | Simple Icons 16.27.0 (CC0-1.0) |
+| <img src="portfolio/assets/technology/supabase.svg" width="20" height="20" alt="" /> Supabase | Hosted PostgreSQL provider | Simple Icons 16.27.0 (CC0-1.0) |
+| <img src="portfolio/assets/technology/plotly.svg" width="20" height="20" alt="" /> Plotly | Timeline and analytical visuals | Simple Icons 16.27.0 (CC0-1.0) |
+
+## Quick start
+
+### Install and verify
 
 ```bash
-git clone https://github.com/vaibhavkhuranaaa/legal-discovery-intelligence-graph.git
-cd legal-discovery-intelligence-graph
-uv sync                    # create .venv and install locked dependencies
-cp .env.example .env       # fill in backend credentials when cloud milestones begin
-
-uv run pytest              # tests
-uv run ruff check .        # lint
-uv run python scripts/bootstrap_data.py    # generate the synthetic corpus + gold labels
-uv run python scripts/evaluate_extraction.py   # extraction P/R/F1 -> artifacts/
-uv run python scripts/index_pgvector.py        # embed + index Supabase (needs DATABASE_URL)
-uv run python scripts/load_neo4j.py            # extract + load AuraDB graph (needs NEO4J_*)
-uv run python scripts/evaluate_retrieval.py    # vector vs graph-expanded P/R/hit@k + refusal calibration -> artifacts/
-uv run python scripts/evaluate_flags.py        # privilege/PII flag P/R/F1 -> artifacts/
-uv run python scripts/ingest_files.py --src <dir> --custodian <name>   # bring your own PDF/DOCX/EML
-uv run flask --app legal_discovery_graph.webapp run                  # product web UI
-uv run streamlit run src/legal_discovery_graph/ui/streamlit_app.py   # legacy dashboard
+uv sync --frozen
+uv run ruff check .
+uv run pytest -q
 ```
 
-`bootstrap_data.py` deterministically generates the fictional "Project Falcon" investigation
-corpus (455 documents at the default seed) with exact gold labels — 2,223 entity mentions,
-30 events, privilege/PII labels, and 38 categorized retrieval queries (including 10 negative
-queries that calibrate the evidence-refusal threshold) — see
-[docs/DATA_AND_EVALUATION.md](docs/DATA_AND_EVALUATION.md). The dashboard shows retrieved,
-cited evidence with per-chunk graph evidence trails, an entity graph, the extracted event
-timeline, and the evaluation metrics — it does not generate LLM answers. Without configured
-backends it renders explicit degraded states (search disabled, timeline notice, "run the
-evaluation command" empty states) rather than empty results.
+### Generate the synthetic corpus and evaluation
 
-## Live Deployment
+```bash
+uv run python scripts/bootstrap_data.py
+uv run python scripts/evaluate_extraction.py
+uv run python scripts/evaluate_flags.py
+```
 
-The Flask product UI is deployed on **Render** (free tier, gunicorn, ONNX embedding backend —
-ADR-0014/0015), backed by Supabase (PostgreSQL + pgvector) and Neo4j AuraDB; secrets live only
-in Render environment variables. The earlier Streamlit dashboard remains on **Streamlit
-Community Cloud**. Deployment details and the verified smoke-test records:
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). `requirements.txt` (Streamlit Cloud) and
-`requirements-render.txt` (Render, torch-free) are both generated from `uv.lock` via
-`uv export`; `pyproject.toml` + `uv.lock` remain the dependency source of truth.
+### Run the local product
 
-## Security & Data Disclaimer
+```bash
+uv run flask --app legal_discovery_graph.webapp run
+```
 
-All documents, people, companies, amounts, and events in this project are **synthetic and
-fictional**, generated by `scripts/bootstrap_data.py`. No real, confidential, or client data is
-used anywhere. No credentials are committed; `.env.example` and
-`.streamlit/secrets.toml.example` contain blank placeholders only.
+## Demonstration workflow
 
-## License
+**Investigate a relationship while retaining citations**
 
-[MIT](LICENSE)
+- Open the fictional matter and choose a guided investigation question
+- Review hybrid search results and the calibrated evidence/refusal state
+- Traverse related entities and events in the graph and timeline
+- Open cited synthetic documents and compare the result with committed evaluation
+
+## Evaluation
+
+| Measure | Dataset / scope | Method | Evidence | Limitation |
+| --- | --- | --- | --- | --- |
+| strict entity F1: 0.887 | 2,223 entity mentions in a deterministic 455-document synthetic corpus, seed 42 | One-to-one strict span matching against generator-emitted gold labels | [evaluation.entity-extraction](artifacts/extraction_metrics.json) | Clean templated text materially overstates expected performance on real discovery documents. |
+| relationship hit@5: 0.833 | 38 categorized retrieval queries over the 455-document synthetic corpus | Versioned labeled-query evaluation comparing vector-only and graph-expanded retrieval | [evaluation.hybrid-retrieval](artifacts/retrieval_metrics.json) | Graph expansion improves relationship queries but can dilute dense-corpus ranking at larger k. |
+
+Evaluation mode: **deterministic local evaluation on a synthetic corpus plus a live reachability observation**. These results are project evidence, not a production SLO.
+
+## Data disclosure
+
+| Classification | Source | Permitted use | Excluded data |
+| --- | --- | --- | --- |
+| synthetic | Repository-generated Project Falcon synthetic legal-discovery corpus, seed 42 | Portfolio demonstration, deterministic evaluation, and engineering research | Real client, employee, custodian, matter, communication, and personal data; Production legal advice, privilege determinations, and discovery decisions |
+
+License / provenance: Repository project license; no third-party client or matter data
+
+## Security and privacy boundaries
+
+| Control | Implementation | Evidence | Known limitation |
+| --- | --- | --- | --- |
+| Synthetic-only public corpus | The generator creates fictional documents, people, organizations, events, identifiers, and gold labels. | [disclosure.synthetic-corpus](docs/DATA_AND_EVALUATION.md) | Synthetic templated text is cleaner than real discovery material. |
+| Evidence threshold and explicit refusal | The retriever returns an explicit unsupported state when the calibrated evidence threshold is not met. | [evaluation.hybrid-retrieval](artifacts/retrieval_metrics.json) | A calibrated threshold on this corpus is not a legal-correctness guarantee. |
+| Read-only public presentation | The public application exposes the fictional matter and aggregate evidence without a real-client upload path. | [deployment.render-root](evidence/deployment/live-check.json), [disclosure.synthetic-corpus](docs/DATA_AND_EVALUATION.md) | The demo has no authenticated matter isolation or production confidentiality posture. |
+
+## Deployment state
+
+| Provider | Runtime | State | Exposure | Verified | Production claim |
+| --- | --- | --- | --- | --- | --- |
+| Render | Flask + gunicorn with an ONNX embedding backend | live | anonymous | 2026-07-23T20:52:19Z | No |
+
+## Technology decisions and trade-offs
+
+| Decision | Why | Alternative | Trade-off |
+| --- | --- | --- | --- |
+| PostgreSQL pgvector plus Neo4j | Vector similarity and explicit relationship traversal serve complementary discovery questions. | Vector search alone | Two stores add operational complexity, and graph expansion requires category-level regression measurement. |
+| ONNX Runtime on Render | Fits the embedding model inside the free-tier memory envelope while preserving measured vector parity. | PyTorch sentence-transformers runtime | Requires an exported model and parity testing but avoids the deployed worker's torch memory failure. |
+
+## Cost boundaries
+
+| Component | Boundary | Implication |
+| --- | --- | --- |
+| Render web service | Free-tier, memory-constrained, sleep-prone deployment using ONNX instead of PyTorch. | Cold starts and availability variation are expected; no SLO is claimed. |
+| Supabase and Neo4j AuraDB | Portfolio-scale hosted data services for a synthetic corpus. | A real matter would require an owner-approved capacity, retention, and security budget. |
+
+## Known limitations
+
+- Synthetic templated text is materially cleaner than real discovery data.
+- The public demo has no real-client security or matter-isolation posture.
+- Free-tier services can sleep or pause and do not establish an availability SLO.
+- Privilege/PII flags are research aids, not legal or privacy determinations.
+
+## Scalability roadmap
+
+- Add authenticated matter isolation, role-based access, audit retention, and encrypted document storage
+- Introduce OCR and robust parsing for scans, forwarded chains, and production document variance
+- Move ingestion and indexing to background workers with versioned index promotion
+- Add real-world benchmark sets under appropriate legal/data agreements and revalidate thresholds
+- Retire free-tier keep-alive behavior under an owner-approved paid reliability envelope
+
+## Repository structure
+
+| Path | Purpose |
+| --- | --- |
+| `src/legal_discovery_graph/` | Application, extraction, retrieval, graph, and interface code. |
+| `scripts/` | Deterministic corpus, indexing, evaluation, ingestion, and presentation commands. |
+| `artifacts/` | Committed aggregate evaluation evidence. |
+| `architecture/system.mmd` | Canonical editable architecture source. |
+| `portfolio/` | Public evidence manifest and generated presentation assets. |
+| `docs/` | State, handoff, data, deployment, scaling, and decision records. |
+
+## Reproduction and verification
+
+| Check | Command | Evidence |
+| --- | --- | --- |
+| Lint | `.venv/bin/python -m ruff check .` | Command output |
+| Tests | `.venv/bin/python -m pytest -q` | Command output |
+| Manifest JSON | `.venv/bin/python -m json.tool portfolio/project.json >/dev/null` | Command output |
+
+## Evidence index
+
+| ID | Kind | Claim | Method | Result |
+| --- | --- | --- | --- | --- |
+| [`evaluation.entity-extraction`](artifacts/extraction_metrics.json) | evaluation | Entity-mention extraction achieved micro F1 0.887 strict on the committed synthetic corpus. | One-to-one strict span matching against generator-emitted gold labels | 0.887 |
+| [`evaluation.hybrid-retrieval`](artifacts/retrieval_metrics.json) | evaluation | Hybrid retrieval achieved R@10 0.857 and graph expansion improved relationship hit@5 to 0.833. | Versioned labeled-query evaluation comparing vector-only and graph-expanded retrieval | R@10 0.857 / relationship hit@5 0.833 |
+| [`evaluation.privilege-pii-flags`](artifacts/flags_metrics.json) | evaluation | Privilege and synthetic-PII rules achieved F1 1.0 on clean templated text. | Document-level rule evaluation against synthetic gold labels | 1 |
+| [`deployment.render-root`](evidence/deployment/live-check.json) | deployment | The current Render application root returned HTTP 200. | Read-only HTTP request with redirects followed; no user data submitted | true |
+| [`disclosure.synthetic-corpus`](docs/DATA_AND_EVALUATION.md) | disclosure | The corpus, gold labels, people, organizations, identifiers, and events are generated and fictional. | Versioned generator and data/evaluation documentation review | synthetic |
+
+## License and attribution
+
+Source code is MIT licensed. The committed corpus is repository-generated and fictional.
+
+Technology marks are local copies generated from the pinned Simple Icons package where a canonical mark is available; every mark has a visible text label. Mermaid-generated architecture assets are derived from the canonical source in this repository.

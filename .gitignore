@@ -54,6 +54,8 @@ logs/*
 .idea/
 .vscode/
 .claude/
+CLAUDE.md
 
 # Derived local agent context
 graphify-out/
+.agent-audit/
