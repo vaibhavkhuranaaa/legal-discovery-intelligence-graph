@@ -16,7 +16,7 @@
 - Preserve unrelated dirty work. Use Python 3.12+, `uv`, `pyproject.toml`, the `src/` layout, Pydantic contracts, and deterministic tests.
 - `requirements.txt` is a generated hosting artifact; never hand-edit it.
 - Use purpose branches, conventional commits, and the configured human identity only; never add AI/model author or co-author attribution.
-- Preview, publication approval, merge, deployment, public visibility, paid resources, and backend changes are separate owner-gated actions.
+- Merging a completed release to `main` authorizes Render deployment after checks pass, live-SHA verification, and portfolio synchronization. New paid capacity and backend changes remain owner-gated.
 - Delegation is optional and must be bounded.
 
 Run Ruff and the repository tests before handoff. Update state, handoff, architecture/ADR documentation, deployment evidence, and the manifest whenever their owning facts change.

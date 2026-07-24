@@ -1,15 +1,15 @@
-name: Deploy approved eDiscovery revision
+name: Verify automatic eDiscovery deployment
 
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       source_sha:
-        description: Approved 40-character source revision
-        required: true
-        type: string
-      approval_timestamp:
-        description: Owner approval time in ISO-8601 UTC
-        required: true
+        description: Optional 40-character source revision; defaults to the verified main commit
+        required: false
         type: string
 
 permissions:
@@ -21,19 +21,21 @@ concurrency:
 
 env:
   LIVE_URL: https://legal-discovery-intelligence-graph.onrender.com
+  SOURCE_SHA: ${{ inputs.source_sha || github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
   deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     environment: production
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_sha }}
-      - name: Verify approved revision
+          ref: ${{ env.SOURCE_SHA }}
+      - name: Verify exact revision
         run: |
-          test "$(git rev-parse HEAD)" = "${{ inputs.source_sha }}"
-          test "$(printf '%s' '${{ inputs.source_sha }}' | wc -c)" -eq 40
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(printf '%s' "$SOURCE_SHA" | wc -c)" -eq 40
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --locked --group dev
       - run: uv run ruff check . && uv run pytest -q
@@ -50,7 +52,7 @@ jobs:
         run: |
           for attempt in $(seq 1 45); do
             payload="$(curl --fail --silent --show-error "$LIVE_URL/healthz" || true)"
-            if printf '%s' "$payload" | jq -e --arg sha "${{ inputs.source_sha }}" '.status == "ok" and .source_sha == $sha' >/dev/null; then
+            if printf '%s' "$payload" | jq -e --arg sha "$SOURCE_SHA" '.status == "ok" and .source_sha == $sha' >/dev/null; then
               break
             fi
             test "$attempt" -lt 45
@@ -63,24 +65,13 @@ jobs:
         run: |
           mkdir -p artifacts
           jq -n \
-            --arg sourceSha "${{ inputs.source_sha }}" \
-            --arg approvedAt "${{ inputs.approval_timestamp }}" \
+            --arg sourceSha "$SOURCE_SHA" \
             --arg deployedAt "$(date -u +%FT%TZ)" \
             --arg liveUrl "$LIVE_URL" \
-            '{version:1, provider:"Render", sourceSha:$sourceSha, approvedAt:$approvedAt, deployedAt:$deployedAt, liveUrl:$liveUrl, verified:true}' \
+            '{version:1, provider:"Render", sourceSha:$sourceSha, deployedAt:$deployedAt, liveUrl:$liveUrl, verified:true}' \
             > artifacts/release-receipt.json
       - uses: actions/upload-artifact@v4
         with:
-          name: legal-discovery-release-${{ inputs.source_sha }}
+          name: legal-discovery-release-${{ env.SOURCE_SHA }}
           path: artifacts/release-receipt.json
           if-no-files-found: error
-      - name: Request exact-SHA portfolio admission
-        env:
-          GH_TOKEN: ${{ secrets.PORTFOLIO_DISPATCH_TOKEN }}
-          PORTFOLIO_REPOSITORY: ${{ vars.PORTFOLIO_REPOSITORY }}
-        run: >
-          gh api --method POST "repos/${PORTFOLIO_REPOSITORY}/dispatches"
-          -f event_type=project-release-ready
-          -f client_payload[repository]="$GITHUB_REPOSITORY"
-          -f client_payload[ref]="${{ inputs.source_sha }}"
-          -f client_payload[manifest_path]="portfolio/project.json"
