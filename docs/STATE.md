@@ -1,5 +1,7 @@
 # State
 
+Exact-SHA deployment automation is declared in `portfolio/release.json`. The protected Render workflow tests the approved revision, triggers the existing service, verifies `RENDER_GIT_COMMIT`, uploads a receipt, and requests portfolio admission.
+
 - Lifecycle: `maintained`
 - Deployment: `live`
 - Exposure: `anonymous`
