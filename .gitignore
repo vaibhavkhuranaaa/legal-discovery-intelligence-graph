@@ -1,0 +1,81 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.python-version
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Tests & tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Generated data (synthetic corpus is regenerated via scripts/bootstrap_data.py)
+data/raw/*
+data/processed/*
+data/labels/*
+data/failed/*
+!data/**/.gitkeep
+
+# Vector / model artifacts
+artifacts/*
+!artifacts/.gitkeep
+!artifacts/extraction_metrics.json
+!artifacts/retrieval_metrics.json
+*.faiss
+*.npy
+
+# Logs
+logs/*
+!logs/.gitkeep
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+
+# Local tooling policy
+.gemini/
+**/.gemini/
+.windsurf/
+**/.windsurf/
+.roo/
+**/.roo/
+.continue/
+**/.continue/
+.windsurfrules
+**/.windsurfrules
+.aider*
+**/.aider*
+.github/prompts/
+.github/agents/
+.github/**/*.agent.md
+.project/graph-source.sha256
+docs/PROJECT_CONTEXT.md
+docs/takeover-prompt.md
+docs/continuation-guide.md
+docs/NEXT_CHAT_PROMPT.md
+docs/resume-instructions.md
+.vscode/tasks.json
+.project/

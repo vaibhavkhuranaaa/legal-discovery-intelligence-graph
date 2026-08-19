@@ -1,0 +1,31 @@
+# Keeps the free-tier deployment awake (ADR-0022, docs/SCALING.md):
+# - Render free instances sleep after ~15 min idle (750 instance-hrs/month
+#   covers one always-on service).
+# - Supabase free projects pause after ~7 days without database activity;
+#   /audit runs a PostgreSQL query.
+# - Neo4j AuraDB free instances pause after ~3 days without queries;
+#   /timeline runs a Cypher query.
+# Pings are fail-soft: a sleeping host waking up slowly must not fail the run.
+name: keep-alive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # keep Render awake
+    - cron: "17 6 * * *" # daily database activity (Supabase + AuraDB)
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping app
+        run: |
+          curl -sS -o /dev/null -m 90 --retry 2 \
+            https://legal-discovery-intelligence-graph.onrender.com/ || true
+      - name: Touch databases (daily schedule only)
+        if: github.event.schedule == '17 6 * * *' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -sS -o /dev/null -m 120 --retry 2 \
+            https://legal-discovery-intelligence-graph.onrender.com/audit || true
+          curl -sS -o /dev/null -m 120 --retry 2 \
+            https://legal-discovery-intelligence-graph.onrender.com/timeline || true

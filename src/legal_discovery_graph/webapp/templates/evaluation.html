@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Evaluation - Legal Discovery Intelligence Graph{% endblock %}
+
+{% macro pct_table(rows, value_cols, count_cols) %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>{{ caller() }}</th>
+        {% for col in value_cols %}<th class="num">{{ col | replace('_', ' ') }}</th>{% endfor %}
+        {% for col in count_cols %}<th class="num">{{ col }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.label }}</td>
+          {% for col in value_cols %}<td class="num mono">{{ '%.3f' | format(row[col]) }}</td>{% endfor %}
+          {% for col in count_cols %}<td class="num mono">{{ row[col] }}</td>{% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% block content %}
+<div class="page-head">
+  <p class="eyebrow">Reproducible metrics</p>
+  <h1>Evaluation</h1>
+  <p class="lede">
+    Measured against gold labels on the synthetic corpus and loaded from
+    committed artifacts, never hand-written. Reproduce with
+    <code>evaluate_extraction.py</code> and <code>evaluate_retrieval.py</code>.
+  </p>
+</div>
+
+{% if score %}
+  <div class="panel score-panel">
+    <div class="score-hero">
+      <span class="score-value">{{ '%.3f' | format(score.total) }}</span>
+      <span class="score-label">Total model score</span>
+      <span class="score-formula">{{ score.FORMULA }} · equal weights, no tuning</span>
+    </div>
+    <div class="stat-grid score-components">
+      <div class="stat">
+        <span class="stat-value">{{ '%.3f' | format(score.extraction_f1) }}</span>
+        <span class="stat-label">Extraction micro F1 (strict)</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ '%.3f' | format(score.event_f1) }}</span>
+        <span class="stat-label">Event F1</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ '%.3f' | format(score.hybrid_recall_at_10) }}</span>
+        <span class="stat-label"><span class="swatch hybrid"></span>Hybrid recall@10</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ '%.3f' | format(score.hybrid_hit_rate_at_10) }}</span>
+        <span class="stat-label"><span class="swatch hybrid"></span>Hybrid hit rate@10</span>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="panel spaced">
+  <h2>Retrieval <span class="h2-note">32 gold queries, macro-averaged</span></h2>
+  {% if retrieval is none %}
+    <div class="notice">
+      No retrieval metrics artifact found. Generate it against the live
+      backends with: <code>uv run python scripts/evaluate_retrieval.py</code>
+    </div>
+  {% else %}
+    <p class="results-caption tight">
+      embedding model <span class="mono-note">{{ retrieval.embedding_model }}</span> ·
+      fusion: {{ retrieval.fusion }}
+    </p>
+    {% if figure_json %}
+      {% with figure_id = "retrieval-comparison" %}{% include "_figure.html" %}{% endwith %}
+    {% endif %}
+    <details>
+      <summary class="details-title">Per-category detail (@5 and @10)</summary>
+      <div class="split">
+        <div>
+          <h3 class="table-title">Vector-only</h3>
+          {% call pct_table(vector_rows, ('precision', 'recall', 'hit_rate'), ()) %}scope · k{% endcall %}
+        </div>
+        <div>
+          <h3 class="table-title">Graph-expanded (hybrid)</h3>
+          {% call pct_table(hybrid_rows, ('precision', 'recall', 'hit_rate'), ()) %}scope · k{% endcall %}
+        </div>
+      </div>
+    </details>
+    {% if refusal %}
+      <h3 class="table-title">Refusal calibration</h3>
+      <p class="results-caption tight">
+        {{ refusal.rule }} · threshold
+        <span class="mono-note">{{ '%.4f' | format(refusal.threshold) }}</span> ·
+        {{ refusal.negatives_refused }}/{{ refusal.negatives_total }} negative queries
+        refused · {{ refusal.false_refusals }}/{{ refusal.answerable_total }} false
+        refusals · accuracy {{ '%.3f' | format(refusal.accuracy) }}
+      </p>
+    {% endif %}
+    {% if retrieval.note %}
+      <p class="results-caption">{{ retrieval.note }}</p>
+    {% endif %}
+  {% endif %}
+</div>
+
+<div class="panel spaced">
+  <h2>Privilege &amp; PII flags <span class="h2-note">rule-based, document-level</span></h2>
+  {% if flags is none %}
+    <div class="notice">
+      No flags metrics artifact found. Generate it with:
+      <code>uv run python scripts/evaluate_flags.py</code>
+    </div>
+  {% else %}
+    <p class="results-caption tight">
+      {{ flags.documents }} documents scored against gold labels ·
+      counsel domains <span class="mono-note">{{ flags.counsel_domains | join(', ') }}</span>
+    </p>
+    <details>
+      <summary class="details-title">Per-flag detail</summary>
+      {% call pct_table(flags_rows, ('precision', 'recall', 'f1'), ('tp', 'fp', 'fn')) %}flag{% endcall %}
+    </details>
+    {% if flags.note %}
+      <p class="results-caption">{{ flags.note }}</p>
+    {% endif %}
+  {% endif %}
+</div>
+
+<div class="panel spaced">
+  <h2>Entity &amp; event extraction <span class="h2-note">vs gold labels</span></h2>
+  {% if extraction is none %}
+    <div class="notice">
+      No extraction metrics artifact found. Generate it with:
+      <code>uv run python scripts/bootstrap_data.py &amp;&amp;
+      uv run python scripts/evaluate_extraction.py</code>
+    </div>
+  {% else %}
+    <p class="results-caption tight">
+      seed {{ extraction.corpus.seed }} · {{ extraction.corpus.documents }} documents ·
+      {{ extraction.corpus.gold_mentions }} gold mentions ·
+      NER model <span class="mono-note">{{ extraction.ner_model }}</span>
+    </p>
+    <details>
+      <summary class="details-title">Per-type detail (strict span matching)</summary>
+      {% call pct_table(strict_rows, ('precision', 'recall', 'f1'), ('gold', 'predicted')) %}type{% endcall %}
+    </details>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Entity graph - Legal Discovery Intelligence Graph{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="eyebrow">Relationship analysis</p>
+  <h1>Entity graph</h1>
+  <p class="lede">
+    The entities and documents behind an investigation, connected only where
+    a stored, evidence-backed relation exists in Neo4j.
+  </p>
+</div>
+
+<div class="panel">
+  {% if not status.database_configured %}
+    <div class="notice error">
+      Semantic search requires PostgreSQL + pgvector. Set
+      <code>DATABASE_URL</code> (see <code>.env.example</code>) and restart.
+    </div>
+  {% else %}
+    <form class="search-form" method="get" action="{{ url_for('webapp.graph') }}">
+      <label class="field grow">
+        <span class="field-label">Question</span>
+        <input type="text" name="q" value="{{ question }}" required
+               placeholder="e.g. Who approved the payments to Northgate Supply Group?">
+      </label>
+      <input type="hidden" name="limit" value="{{ limit }}">
+      <button type="submit" class="button">Show evidence graph</button>
+    </form>
+  {% endif %}
+</div>
+
+{% if search_error %}
+  <div class="notice error spaced">
+    Investigation search failed and no evidence could be retrieved.
+    Details: {{ search_error }}
+  </div>
+{% elif searched %}
+  {% if graph_error %}
+    <div class="notice warn spaced">
+      Graph expansion is unavailable, so only vector evidence is shown.
+      Reason: {{ graph_error }}
+    </div>
+  {% endif %}
+  {% if elements %}
+    <div class="panel spaced">
+      <h2>Evidence graph</h2>
+      <p class="results-caption tight">
+        <span class="legend-swatch entity"></span> entities ·
+        <span class="legend-swatch document"></span> documents ·
+        node size = number of evidence-backed relations. Drag to rearrange,
+        pinch or scroll to zoom, and select a connection for its provenance.
+        <a href="{{ url_for('webapp.investigate', q=question, limit=limit) }}">←
+        Back to the evidence for this question</a>
+      </p>
+      <div class="graph-toolbar" aria-label="Graph controls">
+        <button type="button" class="button button-secondary" id="fit-graph">
+          Fit graph to view
+        </button>
+      </div>
+      <div id="cy" role="img"
+           aria-label="Evidence graph of entities and cited documents"></div>
+      <div id="cy-detail" class="cy-detail" hidden></div>
+      <script src="{{ url_for('static', filename='js/cytoscape-3.30.4.min.js') }}"></script>
+      <script>
+        const elements = JSON.parse({{ elements | tojson | tojson }});
+        const cy = cytoscape({
+          container: document.getElementById("cy"),
+          elements: elements,
+          wheelSensitivity: 0.2,
+          style: [
+            {
+              selector: "node",
+              style: {
+                label: "data(label)",
+                width: "mapData(degree, 1, 10, 22, 56)",
+                height: "mapData(degree, 1, 10, 22, 56)",
+                "font-size": 11,
+                "font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                color: "#16232f",
+                "text-valign": "bottom",
+                "text-margin-y": 6,
+                "text-wrap": "ellipsis",
+                "text-max-width": 140,
+                "border-width": 2,
+                "border-color": "#fffdf9"
+              }
+            },
+            { selector: 'node[kind = "entity"]', style: { "background-color": "#1baf7a" } },
+            { selector: 'node[kind = "document"]', style: { "background-color": "#2a78d6", shape: "round-rectangle" } },
+            {
+              selector: "edge",
+              style: {
+                width: 1.5,
+                "line-color": "#cfc7b8",
+                "curve-style": "bezier",
+                "target-arrow-shape": "none"
+              }
+            },
+            { selector: "edge:selected", style: { "line-color": "#a8762a", width: 3 } },
+            { selector: "node:selected", style: { "border-color": "#a8762a", "border-width": 3 } }
+          ],
+          layout: { name: "cose", animate: false, padding: 30, nodeRepulsion: 40000 }
+        });
+        const detail = document.getElementById("cy-detail");
+        document.getElementById("fit-graph").addEventListener("click", () => cy.fit(undefined, 32));
+        cy.on("tap", "edge", (evt) => {
+          const d = evt.target.data();
+          const src = cy.getElementById(d.source).data("label");
+          const tgt = cy.getElementById(d.target).data("label");
+          detail.hidden = false;
+          detail.innerHTML =
+            "<strong>" + src + "</strong> · " + d.relation + " · <strong>" + tgt +
+            "</strong><br><span class='mono-note'>stored, evidence-backed relation" +
+            " from the graph</span>";
+        });
+        cy.on("tap", "node", (evt) => {
+          const d = evt.target.data();
+          detail.hidden = false;
+          detail.innerHTML =
+            "<strong>" + d.label + "</strong> (" + d.kind + ") · " + d.degree +
+            " evidence-backed relation" + (d.degree === 1 ? "" : "s");
+        });
+        cy.on("tap", (evt) => { if (evt.target === cy) detail.hidden = true; });
+      </script>
+    </div>
+  {% else %}
+    <div class="notice spaced">
+      No graph relationships were found for this question's evidence.
+      Nothing is drawn that the graph does not back.
+    </div>
+  {% endif %}
+{% elif status.database_configured %}
+  <div class="notice spaced">
+    Enter an investigative question above, or run one on the
+    <a href="{{ url_for('webapp.investigate') }}">Investigate</a> page and
+    follow its graph link. The graph shows the evidence behind the results.
+  </div>
+{% endif %}
+{% endblock %}

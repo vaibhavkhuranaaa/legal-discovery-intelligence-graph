@@ -1,0 +1,43 @@
+%% portfolio-architecture: v1
+flowchart LR
+  Reviewer(["Reviewer / investigator"])
+  Corpus[("Synthetic corpus + gold labels")]
+  Files["Optional PDF / DOCX / EML inputs"]
+
+  subgraph Offline["Offline validation and indexing boundary"]
+    Validate("Schema, checksum, deduplication, and chain-of-custody validation")
+    Extract("Entity, event, privilege, and synthetic-PII extraction")
+    Embed("Sentence-transformer embeddings")
+    Evaluate("Deterministic extraction, retrieval, refusal, and flag evaluation")
+  end
+
+  subgraph Data["Hosted synthetic-data boundary"]
+    Vector[("Supabase PostgreSQL + pgvector")]
+    Graph[("Neo4j AuraDB relationship graph")]
+  end
+
+  subgraph Runtime["Render read-only runtime"]
+    API("Flask investigation service")
+    Hybrid("Hybrid retriever + calibrated refusal")
+    Views("Citations, graph, timeline, flags, and case brief")
+    Observe("Status, audit trail, and aggregate evidence")
+  end
+
+  Model{{"ONNX embedding runtime"}}
+  Reviewer --> API --> Hybrid --> Views --> Reviewer
+  Corpus --> Validate --> Extract --> Embed --> Vector
+  Extract --> Graph
+  Files -. optional .-> Validate
+  Hybrid --> Vector
+  Hybrid --> Graph
+  Hybrid -. optional inference .-> Model
+  Evaluate -. evidence .-> Extract
+  Evaluate -. regression control .-> Hybrid
+  Observe -. monitoring .-> API
+  API -. audit control .-> Observe
+
+  subgraph Legend["Legend"]
+    L1("Service / processing") --> L2[("Persistent data")]
+    L3("Optional / asynchronous") -.-> L4{{"External hosted service"}}
+    L5("Monitoring / evidence") -.-> L6("Control flow")
+  end
